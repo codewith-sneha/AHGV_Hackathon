@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import "tailwindcss";
+
+/* Video.js overrides */
+.video-js {
+  width: 100% !important;
+  min-height: 200px;
+}
+
+/* Remove extra black space */
+.vjs-tech {
+  position: relative !important;
+}
