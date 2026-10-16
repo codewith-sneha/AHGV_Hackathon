@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+echo "client/public/lecture.mp4" >> .gitignore
+echo "client/public/*.mp4" >> .gitignore
+echo "client/public/*.webm" >> .gitignore
