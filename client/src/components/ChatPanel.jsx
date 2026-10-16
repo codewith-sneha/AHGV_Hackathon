@@ -9,7 +9,6 @@ const USE_MOCK = true
 const QUICK_CHIPS = [
   'Summarize what I learned so far',
   'Explain the last 2 minutes',
-  'Start a quick mock interview on this section',
 ]
 
 const parseTimestamp = (str) => {
@@ -32,35 +31,46 @@ const ChatPanel = ({ lectureId, currentTime, formattedTime, pauseAndGetTime, see
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const sendMessage = async (question) => {
-    if (!question.trim() || loading) return
-    const lockedTime = pauseAndGetTime()
-    setMessages(prev => [...prev, { role: 'user', content: question }])
-    setInput('')
-    setLoading(true)
-    try {
-      let data
-      if (USE_MOCK) {
-        data = await mockQuery(question, lectureId, lockedTime)
-      } else {
-        data = await queryAssistant(question, lectureId, lockedTime)
-      }
+ const sendMessage = async (question) => {
+  if (!question.trim() || loading) return
+  const lockedTime = pauseAndGetTime()
+
+  const userTurn = { role: 'user', content: question }
+  const newHistory = [...history, userTurn]
+
+  setMessages(prev => [...prev, { role: 'user', content: question }])
+  setInput('')
+  setLoading(true)
+
+  try {
+    let data
+    if (USE_MOCK) {
+      data = await mockQuery(question, lectureId, lockedTime)
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.answer,
         type: data.type,
       }])
-    } catch (err) {
+    } else {
+      data = await queryAssistant(question, lectureId, lockedTime, newHistory)
+      setHistory([...newHistory, { role: 'assistant', content: data.answer }])
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '⚠️ Something went wrong. Please try again.',
-        type: 'error',
+        content: data.answer,
+        citations: data.citations || [],
+        intent: data.intent,
+        refused: data.refused,
       }])
-    } finally {
-      setLoading(false)
     }
+  } catch (err) {
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: '⚠️ Something went wrong. Please try again.',
+    }])
+  } finally {
+    setLoading(false)
   }
-
+}
   const handleSend = () => sendMessage(input)
 
   const handleKeyDown = (e) => {
@@ -69,6 +79,8 @@ const ChatPanel = ({ lectureId, currentTime, formattedTime, pauseAndGetTime, see
       handleSend()
     }
   }
+
+  const [history, setHistory] = useState([])
 
   const renderContent = (content) => {
     const parts = []
@@ -125,7 +137,7 @@ const ChatPanel = ({ lectureId, currentTime, formattedTime, pauseAndGetTime, see
         <div className="mt-1 flex items-center gap-2">
           
           <span className="text-xs text-gray-500">
-            {loading ? 'Thinking...' : `Grounded to T ≤ ${formattedTime}`}
+            {loading ? 'Thinking...' : ' '}
           </span>
         </div>
       </div>

@@ -29,8 +29,7 @@ const VideoPlayer = ({ playerRef }) => {
         src="/lecture.mp4"
         controls
         playsInline
-        className="w-full"
-        style={{ maxHeight: '60vh' }}
+        className="w-full lg:max-h-[60vh] max-h-[35vh]"
       />
     </div>
   )

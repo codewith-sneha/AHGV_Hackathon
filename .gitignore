@@ -1,0 +1,17 @@
+# Video files
+*.mp4
+*.webm
+*.mov
+
+# Node modules
+node_modules/
+client/node_modules/
+
+# Build
+dist/
+client/dist/
+
+# Env
+.env
+client/.env
+EOF

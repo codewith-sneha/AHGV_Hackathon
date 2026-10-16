@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, FileText, Presentation, PlayCircle, Loader2, BookOpen } from 'lucide-react'
-import VideoPlayer from '../components/VideoPlayer'
 import ChatPanel from '../components/ChatPanel'
 import { useVideoTime } from '../hooks/useVideoTime'
 import { mockIngest } from '../services/mockApi'
@@ -11,13 +10,15 @@ const USE_MOCK = true
 
 const lectureData = {
   lecture_1: {
+    id: 'L01',
     title: 'Lecture 1: Introduction to Data Structures',
     description: 'Learn about fundamental data structures, arrays, linked lists and memory allocation.',
-    pdf: 'Lecture1_notes.pdf',
+    pdf: 'Lecture1_Notes.pdf',
     ppt: 'Lecture1_Slides.pptx',
     duration: '42 min',
   },
   lecture_4: {
+    id: 'L04',
     title: 'Lecture 4: Binary Search Trees',
     description: 'Learn about BST properties, insertion, deletion and search operations.',
     pdf: 'Lecture4_Notes.pdf',
@@ -30,7 +31,7 @@ const lectureData = {
 const LectureOverview = ({ lecture, lectureId, onStart, loading, navigate }) => (
   <div className="min-h-screen bg-gray-50 flex flex-col">
     <header className="bg-white border-b border-gray-200">
-      <div className="max-w-8xl mx-auto px-6 py-4 flex items-center gap-3">
+      <div className="mx-auto px-6 py-4 flex items-center gap-3">
         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
           <BookOpen size={16} className="text-white" />
         </div>
@@ -91,13 +92,12 @@ const LectureOverview = ({ lecture, lectureId, onStart, loading, navigate }) => 
         <button
           onClick={() => onStart(lectureId)}
           disabled={loading}
-          className="w-full cursor-pointer flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition disabled:opacity-70 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          {loading ? (
-            <><Loader2 size={18} className="animate-spin" /> Preparing your session...</>
-          ) : (
-            <><PlayCircle size={20} /> Start Learning</>
-          )}
+          {loading
+            ? <><Loader2 size={18} className="animate-spin" /> Preparing your session...</>
+            : <><PlayCircle size={20} /> Start Learning</>
+          }
         </button>
       </div>
     </main>
@@ -105,50 +105,78 @@ const LectureOverview = ({ lecture, lectureId, onStart, loading, navigate }) => 
 )
 
 // ── State 2: Player + Chat ────────────────────────────────
-const LecturePlayer = ({ lectureId, lecture, onBack, navigate }) => {
+const LecturePlayer = ({ lectureId, lecture, navigate }) => {
+    
+  const videoRef = useRef(null)
   const playerRef = useRef(null)
   const { currentTime, formattedTime, seekTo, pauseAndGetTime } = useVideoTime(playerRef)
   const [activeTab, setActiveTab] = useState('video')
 
+  // Wire up playerRef to native video element
+  const initPlayer = (el) => {
+    if (!el) return
+    videoRef.current = el
+    playerRef.current = {
+      currentTime: (t) => {
+        if (!el) return 0
+        if (t !== undefined) el.currentTime = t
+        return el.currentTime
+      },
+      pause: () => el.pause(),
+      play: () => el.play(),
+      isDisposed: () => false,
+    }
+  }
+
   return (
-    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+    <div className="flex flex-col bg-gray-50 overflow-hidden" style={{ height: '100dvh' }}>
 
       {/* Top Bar */}
-      <header className="bg-white border-b border-gray-200 px-5 py-3 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-3">
+      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => navigate('/')}
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition cursor-pointer"
           >
             <ArrowLeft size={16} />
-            Back
+            <span className="hidden sm:inline">Back</span>
           </button>
           <span className="text-gray-300">|</span>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
-              <BookOpen size={12} className="text-white" />
+          <div className="flex items-center gap-1.5">
+            <div className="w-5 h-5 bg-blue-600 rounded-md flex items-center justify-center shrink-0">
+              <BookOpen size={11} className="text-white" />
             </div>
-            <span className="text-sm font-semibold text-gray-800">{lecture.title}</span>
+            <span className="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-1">
+              {lecture.title}
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-gray-900 text-white px-3 py-1.5 rounded-full text-xs font-mono">
+        <div className="flex items-center gap-1.5 bg-gray-900 text-white px-2.5 py-1.5 rounded-full text-xs font-mono shrink-0">
           <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
           {formattedTime}
         </div>
       </header>
 
       {/* Split Screen */}
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
 
-        {/* LEFT — Video */}
-        <div className="lg:w-[70%] w-full flex flex-col overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200">
+        {/* LEFT — Video (fixed, doesn't grow) */}
+        <div className="lg:w-[70%] w-full flex flex-col shrink-0 lg:overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200">
 
-          <div className="w-full bg-black">
-            <VideoPlayer playerRef={playerRef} />
+          {/* Video */}
+          <div className="w-full bg-black shrink-0">
+            <video
+              ref={initPlayer}
+              src="/lecture.mp4"
+              controls
+              playsInline
+              className="w-full max-h-[30vh] lg:max-h-[65vh]"
+            />
           </div>
 
-          <div className="bg-white border-t border-gray-200 flex-shrink-0">
+          {/* Tabs — hidden on mobile to save space */}
+          <div className="hidden lg:block bg-white border-t border-gray-200 shrink-0">
             <div className="flex border-b border-gray-200 px-4">
               {['video', 'pdf', 'slides'].map(tab => (
                 <button
@@ -165,45 +193,35 @@ const LecturePlayer = ({ lectureId, lecture, onBack, navigate }) => {
               ))}
             </div>
 
-            <div className="p-4 h-28 overflow-y-auto">
+            <div className="p-4 h-24 overflow-y-auto">
               {activeTab === 'video' && (
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="font-medium">Current Position:</span>
+                    <span className="font-medium">Position:</span>
                     <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-blue-700">{formattedTime}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="font-medium">Lecture:</span>
-                    <span>{lecture.title}</span>
                   </div>
                 </div>
               )}
               {activeTab === 'pdf' && (
-                <div className="flex items-center gap-3">
-                  <FileText size={20} className="text-red-500" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">{lecture.pdf}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">PDF preview available when backend is connected.</p>
-                  </div>
-                </div>
-              )}
-              {activeTab === 'slides' && (
-                <div className="flex items-center gap-3">
-                  <Presentation size={20} className="text-orange-500" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">{lecture.ppt}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Slide preview available when backend is connected.</p>
-                  </div>
-                </div>
-              )}
+  <div className="flex items-center gap-3">
+    <FileText size={18} className="text-red-500 shrink-0" />
+    <p className="text-sm text-gray-600">{lecture.pdf}</p>
+  </div>
+)}
+{activeTab === 'slides' && (
+  <div className="flex items-center gap-3">
+    <Presentation size={18} className="text-orange-500 shrink-0" />
+    <p className="text-sm text-gray-600">{lecture.ppt}</p>
+  </div>
+)}
             </div>
           </div>
         </div>
 
-        {/* RIGHT — Chat */}
-        <div className="lg:w-[30%] w-full flex flex-col overflow-hidden min-h-[400px] lg:min-h-0">
+        {/* RIGHT — Chat (takes all remaining space, scrolls internally) */}
+        <div className="lg:w-[30%] w-full flex-1 min-h-0 flex flex-col overflow-hidden">
           <ChatPanel
-            lectureId={lectureId}
+            lectureId={lecture.id || lectureId}
             currentTime={currentTime}
             formattedTime={formattedTime}
             pauseAndGetTime={pauseAndGetTime}
@@ -216,7 +234,7 @@ const LecturePlayer = ({ lectureId, lecture, onBack, navigate }) => {
   )
 }
 
-// ── Main Page Component ───────────────────────────────────
+// ── Main Page ─────────────────────────────────────────────
 const LecturePage = () => {
   const { lectureId } = useParams()
   const navigate = useNavigate()
@@ -270,7 +288,6 @@ const LecturePage = () => {
     <LecturePlayer
       lectureId={lectureId}
       lecture={lecture}
-      onBack={() => setSessionReady(false)}
       navigate={navigate}
     />
   )
