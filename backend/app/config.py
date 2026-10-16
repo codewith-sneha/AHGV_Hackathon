@@ -1,0 +1,11 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+QDRANT_URL = os.getenv("QDRANT_URL", "")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
+COLLECTION_NAME = os.getenv("COLLECTION_NAME", "course_materials")
+EMBEDDING_MODEL_NAME = "BAAI/bge-small-en-v1.5"
+VECTOR_SIZE = 384
