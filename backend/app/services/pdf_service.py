@@ -28,7 +28,7 @@ def extract_pdf_chunks(pdf_file_path: str, approx_total_video_duration_sec: floa
         chunks.append({
             "text": f"[Slide/Page {page_num}]: {clean_text}",
             "lecture_id": "L01",
-            "source_type": "pdf_notes",
+            "source_type": "pdf",
             "page_num": page_num,
             "line_start": 1,
             "line_end": total_lines,
