@@ -44,8 +44,8 @@ class Config:
     collection: str = _env("QDRANT_COLLECTION", "knowledge_base")
     vector_name: Optional[str] = _env("QDRANT_VECTOR_NAME", "") or None
     embed_model: str = _env("EMBED_MODEL", "all-MiniLM-L6-v2")  # match ingestion
-    gemini_model: str = _env("GEMINI_MODEL", "gemini-2.5-flash")
-    thinking_budget: str = _env("GEMINI_THINKING_BUDGET", "0")  
+    gemini_model: str = _env("GEMINI_MODEL", "gemini-1.5-flash")
+    thinking_budget: str = _env("GEMINI_THINKING_BUDGET", "") 
     min_score: float = float(_env("MIN_SCORE", "0.25"))          
     context_chars: int = int(_env("CONTEXT_CHARS", "6000"))      
     clip_chars: int = int(_env("CLIP_CHARS", "900"))             
@@ -353,7 +353,7 @@ class Gemini:
         kwargs = dict(system_instruction=system, temperature=0.2, max_output_tokens=max_tokens)
         if json_mode:
             kwargs["response_mime_type"] = "application/json"
-        if self.thinking_budget != "":
+        if self.thinking_budget and self.thinking_budget not in ("0", ""):
             kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=int(self.thinking_budget))
         resp = self._client.models.generate_content(
             model=self.model, contents=prompt, config=types.GenerateContentConfig(**kwargs)
