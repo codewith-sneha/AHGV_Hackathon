@@ -10,7 +10,7 @@ project_root = os.path.abspath(os.path.join(current_dir, "../../"))
 sys.path.append(project_root)
 
 # Import YOUR ingestion route
-from app.routes.ingest import router as ingest_router
+#from app.routes.ingest import router as ingest_router
 from app.services.qdrant_service import init_qdrant_collection
 
 # Import HER agent route (directly from the external agent folder)
@@ -33,7 +33,7 @@ def startup_event():
     init_qdrant_collection()
 
 # 1. Mount your ingestion routes
-app.include_router(ingest_router)
+#app.include_router(ingest_router)
 
 # 2. Mount her agent routes under /api (This makes her /chat endpoint accessible at /api/chat)
 app.include_router(agent_router, prefix="/api", tags=["Agentic RAG"])
