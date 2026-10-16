@@ -316,22 +316,27 @@ REFUSAL_NOTHING = "You haven't covered enough of the video yet for me to work fr
 class Embedder:
     def __init__(self, model_name: str):
         self.model_name = model_name
-        self._model = None
+        self.hf_token = _env("HF_TOKEN", "")
         self._cache: dict[str, list[float]] = {}
         self._lock = threading.Lock()
 
     def __call__(self, text: str) -> list[float]:
-        if text in self._cache:
-            return self._cache[text]
+        if text in self._cache: return self._cache[text]
+        import requests
+        
+        headers = {"Authorization": f"Bearer {self.hf_token}"}
+        url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{self.model_name}"
+        
+        response = requests.post(url, headers=headers, json={"inputs": text})
+        vec = response.json()
+        
+        # Extract the flat list of floats from the Hugging Face response
+        if isinstance(vec, list) and len(vec) > 0 and isinstance(vec[0], list):
+            vec = vec[0]
+            
         with self._lock:
-            if self._model is None:
-                from sentence_transformers import SentenceTransformer
-
-                self._model = SentenceTransformer(self.model_name)
-        vec = self._model.encode(text, normalize_embeddings=True).tolist()
-        if len(self._cache) > 2048:
-            self._cache.clear()
-        self._cache[text] = vec
+            if len(self._cache) > 2048: self._cache.clear()
+            self._cache[text] = vec
         return vec
 
 
