@@ -325,7 +325,7 @@ class Embedder:
         import requests
         
         headers = {"Authorization": f"Bearer {self.hf_token}"}
-        url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{self.model_name}"
+        url = f"https://router.huggingface.co/hf-inference/models/{self.model_name}/pipeline/feature-extraction"
         
         response = requests.post(url, headers=headers, json={"inputs": text})
         vec = response.json()
