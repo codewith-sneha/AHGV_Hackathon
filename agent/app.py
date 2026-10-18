@@ -323,14 +323,30 @@ class Embedder:
     def __call__(self, text: str) -> list[float]:
         if text in self._cache: return self._cache[text]
         import requests
+        import time
         
         headers = {"Authorization": f"Bearer {self.hf_token}"}
         url = f"https://router.huggingface.co/hf-inference/models/{self.model_name}/pipeline/feature-extraction"
         
-        response = requests.post(url, headers=headers, json={"inputs": text})
-        vec = response.json()
-        
-        # Extract the flat list of floats from the Hugging Face response
+        # Retry loop for when the Hugging Face model is "waking up"
+        for attempt in range(5):
+            response = requests.post(url, headers=headers, json={"inputs": text})
+            vec = response.json()
+            
+            # Check if Hugging Face returned an error dictionary
+            if isinstance(vec, dict) and "error" in vec:
+                if "loading" in vec["error"].lower():
+                    print(f"[Embedder] Model is waking up. Waiting 5 seconds... (Attempt {attempt + 1})")
+                    time.sleep(5)
+                    continue
+                else:
+                    # If it's a different error (like invalid token), crash and print it so we can read it
+                    raise RuntimeError(f"Hugging Face API Error: {vec['error']}")
+            
+            # If successful, break out of the retry loop
+            break
+            
+        # Extract the flat list of floats from the successful response
         if isinstance(vec, list) and len(vec) > 0 and isinstance(vec[0], list):
             vec = vec[0]
             
