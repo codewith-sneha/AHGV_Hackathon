@@ -4,7 +4,7 @@ import { Send, Bot, User, Loader2 } from 'lucide-react'
 import { mockQuery } from '../services/mockApi'
 import { queryAssistant } from '../services/api'
 
-const USE_MOCK = true
+const USE_MOCK = false
 
 const QUICK_CHIPS = [
   'Summarize what I learned so far',

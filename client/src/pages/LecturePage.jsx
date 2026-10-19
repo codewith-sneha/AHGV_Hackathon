@@ -6,7 +6,7 @@ import { useVideoTime } from '../hooks/useVideoTime'
 import { mockIngest } from '../services/mockApi'
 import { ingestLecture } from '../services/api'
 
-const USE_MOCK = true
+const USE_MOCK = false
 const lectureData = {
   lecture_1: {
     id: 'L01',
@@ -194,7 +194,7 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
       </div>
     )}
   {activeTab === 'pdf' && (
-  <div className="-mx-0 overflow-hidden" style={{ height: '300px' }}>
+  <div className="mx-0 overflow-hidden" style={{ height: '300px' }}>
     <iframe
       src="https://drive.google.com/file/d/1rebrqWGGo8WgYT3RqEYc8Ez0sQz3DLxh/preview"
       className="border-0"
