@@ -6,7 +6,7 @@ import { useVideoTime } from '../hooks/useVideoTime'
 import { mockIngest } from '../services/mockApi'
 import { ingestLecture } from '../services/api'
 
-const USE_MOCK = false
+const USE_MOCK = true
 
 const lectureData = {
   lecture_1: {
@@ -29,7 +29,7 @@ const LectureOverview = ({ lecture, lectureId, onStart, loading, navigate }) => 
         </div>
         <div className="cursor-pointer" onClick={() => navigate('/')}>
           <p className="text-xs text-gray-500">BuildVerse LMS</p>
-    <h1 className="text-sm font-semibold text-gray-800">Biology — Photosynthesis</h1>
+          <h1 className="text-sm font-semibold text-gray-800">Biology — Photosynthesis</h1>
         </div>
       </div>
     </header>
@@ -98,7 +98,7 @@ const LectureOverview = ({ lecture, lectureId, onStart, loading, navigate }) => 
 
 // ── State 2: Player + Chat ────────────────────────────────
 const LecturePlayer = ({ lectureId, lecture, navigate }) => {
-    
+
   const videoRef = useRef(null)
   const playerRef = useRef(null)
   const { currentTime, formattedTime, seekTo, pauseAndGetTime } = useVideoTime(playerRef)
@@ -154,8 +154,7 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
       <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
 
         {/* LEFT — Video (fixed, doesn't grow) */}
-        <div className="lg:w-[70%] w-full flex flex-col shrink-0 lg:overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200">
-
+        <div className="lg:w-[70%] w-full flex flex-col lg:overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200 shrink-0">
           {/* Video */}
           <div className="w-full bg-black shrink-0">
             <video
@@ -167,51 +166,52 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
             />
           </div>
 
-          {/* Tabs — hidden on mobile to save space */}
-          <div className="hidden lg:block bg-white border-t border-gray-200 shrink-0">
-            <div className="flex border-b border-gray-200 px-4">
-              {['video', 'pdf', 'slides'].map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2.5 text-sm font-medium capitalize border-b-2 transition ${
-                    activeTab === tab
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {tab === 'pdf' ? '📄 PDF Notes' : tab === 'slides' ? '📊 Slides' : '🎬 Video'}
-                </button>
-              ))}
-            </div>
+        {/* Tabs — hidden on mobile to save space */}
+<div className="hidden lg:flex lg:flex-col bg-white border-t border-gray-200 flex-1 min-h-0">
+  <div className="flex border-b border-gray-200 px-4 shrink-0">
+    {['video', 'pdf', 'slides'].map(tab => (
+      <button
+        key={tab}
+        onClick={() => setActiveTab(tab)}
+        className={`px-4 py-2.5 text-sm font-medium capitalize border-b-2 transition ${
+          activeTab === tab
+            ? 'border-blue-600 text-blue-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700'
+        }`}
+      >
+        {tab === 'pdf' ? '📄 PDF Notes' : tab === 'slides' ? '📊 Slides' : '🎬 Video'}
+      </button>
+    ))}
+  </div>
 
-            <div className="p-4 h-24 overflow-y-auto">
-              {activeTab === 'video' && (
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="font-medium">Position:</span>
-                    <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-blue-700">{formattedTime}</span>
-                  </div>
-                </div>
-              )}
-              {activeTab === 'pdf' && (
-  <div className="flex items-center gap-3">
-    <FileText size={18} className="text-red-500 shrink-0" />
-    <p className="text-sm text-gray-600">{lecture.pdf}</p>
+  <div className="flex-1 overflow-hidden">
+    {activeTab === 'video' && (
+      <div className="p-4 flex items-center gap-4">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span className="font-medium">Position:</span>
+          <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-blue-700">{formattedTime}</span>
+        </div>
+      </div>
+    )}
+    {activeTab === 'pdf' && (
+      <iframe
+        src={`/${lecture.pdf}`}
+        className="w-full h-full border-0"
+        title="PDF Notes"
+      />
+    )}
+    {activeTab === 'slides' && (
+      <div className="p-4 flex items-center gap-3">
+        <Presentation size={18} className="text-orange-500 shrink-0" />
+        <p className="text-sm text-gray-600">{lecture.ppt}</p>
+      </div>
+    )}
   </div>
-)}
-{activeTab === 'slides' && (
-  <div className="flex items-center gap-3">
-    <Presentation size={18} className="text-orange-500 shrink-0" />
-    <p className="text-sm text-gray-600">{lecture.ppt}</p>
-  </div>
-)}
-            </div>
-          </div>
+</div>
         </div>
 
         {/* RIGHT — Chat (takes all remaining space, scrolls internally) */}
-        <div className="lg:w-[30%] w-full flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div className="lg:w-[30%] w-full flex flex-col overflow-hidden shrink-0">
           <ChatPanel
             lectureId={lecture.id || lectureId}
             currentTime={currentTime}
@@ -249,17 +249,17 @@ const LecturePage = () => {
   }
 
   const handleStart = async (id) => {
-  setLoading(true)
-  try {
-    // No ingest needed — go directly to player
-    await new Promise(r => setTimeout(r, 800)) // small delay for UX
-    setSessionReady(true)
-  } catch (err) {
-    alert('Failed to start session. Please try again.')
-  } finally {
-    setLoading(false)
+    setLoading(true)
+    try {
+      // No ingest needed — go directly to player
+      await new Promise(r => setTimeout(r, 800)) // small delay for UX
+      setSessionReady(true)
+    } catch (err) {
+      alert('Failed to start session. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
   if (!sessionReady) {
     return (
