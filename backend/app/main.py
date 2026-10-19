@@ -13,9 +13,7 @@ sys.path.append(project_root)
 #from app.routes.ingest import router as ingest_router
 from app.services.qdrant_service import init_qdrant_collection
 
-# Import HER agent route (directly from the external agent folder)
-from agent.main import router as agent_router
-
+from agent.app import router as agent_router
 
 app = FastAPI(title="AHGV Learning Assistant API", version="1.0.0")
 
