@@ -7,13 +7,13 @@ import { mockIngest } from '../services/mockApi'
 import { ingestLecture } from '../services/api'
 
 const USE_MOCK = true
-
 const lectureData = {
   lecture_1: {
     id: 'L01',
     title: 'Lecture 1: Introduction to Photosynthesis',
-    description: 'Learn what photosynthesis is, how plants use sunlight, and the role of chlorophyll in converting light to energy.',
+    description: 'Learn what photosynthesis is, how plants use sunlight, and the role of chlorophyll.',
     pdf: 'Lecture1_Notes.pdf',
+    pdfEmbed: 'https://drive.google.com/file/d/1rebrqWGGo8WgYT3RqEYc8Ez0sQz3DLxh/preview',
     ppt: 'Lecture1_Slides.pptx',
     duration: '9 min',
   },
@@ -193,13 +193,14 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
         </div>
       </div>
     )}
-    {activeTab === 'pdf' && (
-      <iframe
-        src={`/${lecture.pdf}`}
-        className="w-full h-full border-0"
-        title="PDF Notes"
-      />
-    )}
+   {activeTab === 'pdf' && (
+  <iframe
+    src="https://drive.google.com/file/d/1rebrqWGGo8WgYT3RqEYc8Ez0sQz3DLxh/preview"
+    className="w-full h-full border-0"
+    title="PDF Notes"
+    allow="autoplay"
+  />
+)}
     {activeTab === 'slides' && (
       <div className="p-4 flex items-center gap-3">
         <Presentation size={18} className="text-orange-500 shrink-0" />
