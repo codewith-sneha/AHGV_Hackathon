@@ -6,25 +6,17 @@ import { useVideoTime } from '../hooks/useVideoTime'
 import { mockIngest } from '../services/mockApi'
 import { ingestLecture } from '../services/api'
 
-const USE_MOCK = true
+const USE_MOCK = false
 
 const lectureData = {
   lecture_1: {
     id: 'L01',
-    title: 'Lecture 1: Introduction to Data Structures',
-    description: 'Learn about fundamental data structures, arrays, linked lists and memory allocation.',
+    title: 'Lecture 1: Introduction to Photosynthesis',
+    description: 'Learn what photosynthesis is, how plants use sunlight, and the role of chlorophyll in converting light to energy.',
     pdf: 'Lecture1_Notes.pdf',
     ppt: 'Lecture1_Slides.pptx',
-    duration: '42 min',
+    duration: '9 min',
   },
-  lecture_4: {
-    id: 'L04',
-    title: 'Lecture 4: Binary Search Trees',
-    description: 'Learn about BST properties, insertion, deletion and search operations.',
-    pdf: 'Lecture4_Notes.pdf',
-    ppt: 'Lecture4_Slides.pptx',
-    duration: '47 min',
-  }
 }
 
 // ── State 1: Course Overview ──────────────────────────────
@@ -37,7 +29,7 @@ const LectureOverview = ({ lecture, lectureId, onStart, loading, navigate }) => 
         </div>
         <div className="cursor-pointer" onClick={() => navigate('/')}>
           <p className="text-xs text-gray-500">BuildVerse LMS</p>
-          <h1 className="text-sm font-semibold text-gray-800">Data Structures & Algorithms</h1>
+    <h1 className="text-sm font-semibold text-gray-800">Biology — Photosynthesis</h1>
         </div>
       </div>
     </header>
@@ -257,20 +249,17 @@ const LecturePage = () => {
   }
 
   const handleStart = async (id) => {
-    setLoading(true)
-    try {
-      if (USE_MOCK) {
-        await mockIngest(id)
-      } else {
-        await ingestLecture(id)
-      }
-      setSessionReady(true)
-    } catch (err) {
-      alert('Failed to start session. Please try again.')
-    } finally {
-      setLoading(false)
-    }
+  setLoading(true)
+  try {
+    // No ingest needed — go directly to player
+    await new Promise(r => setTimeout(r, 800)) // small delay for UX
+    setSessionReady(true)
+  } catch (err) {
+    alert('Failed to start session. Please try again.')
+  } finally {
+    setLoading(false)
   }
+}
 
   if (!sessionReady) {
     return (

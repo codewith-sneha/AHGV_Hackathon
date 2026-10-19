@@ -1,14 +1,13 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const API_BASE = 'https://ahgv-learning-backend.onrender.com'
 
 export const queryAssistant = async (question, lectureId, timestamp, history = []) => {
-  const res = await fetch(`${API_BASE}/api/query`, {
+  const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       question,
       video_id: lectureId,
-      t_current: timestamp,
-      course_id: 'CS101',
+      pause_time: timestamp,
       action: 'auto',
       history,
     }),
@@ -17,12 +16,6 @@ export const queryAssistant = async (question, lectureId, timestamp, history = [
   return res.json()
 }
 
-export const ingestLecture = async (lectureId) => {
-  const res = await fetch(`${API_BASE}/api/ingest`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lecture_id: lectureId }),
-  })
-  if (!res.ok) throw new Error('Ingest failed')
-  return res.json()
+export const ingestLecture = async () => {
+  return { success: true }
 }

@@ -5,9 +5,9 @@ const lectures = [
   {
     id: 'lecture_1',
     number: 1,
-    title: 'Introduction to Data Structures',
-    duration: '42 min',
-    topics: ['Arrays', 'Linked Lists', 'Memory Allocation'],
+    title: 'Introduction to Photosynthesis',
+    duration: '9 min',
+    topics: ['What is Photosynthesis', 'Chlorophyll', 'Light Energy'],
     pdf: 'Lecture1_Notes.pdf',
     ppt: 'Lecture1_Slides.pptx',
     locked: false,
@@ -15,9 +15,9 @@ const lectures = [
   {
     id: 'lecture_2',
     number: 2,
-    title: 'Stacks and Queues',
-    duration: '38 min',
-    topics: ['Stack Operations', 'Queue Types', 'Applications'],
+    title: 'Light Reactions',
+    duration: '12 min',
+    topics: ['Thylakoid', 'ATP Production', 'Water Splitting'],
     pdf: 'Lecture2_Notes.pdf',
     ppt: 'Lecture2_Slides.pptx',
     locked: true,
@@ -25,9 +25,9 @@ const lectures = [
   {
     id: 'lecture_3',
     number: 3,
-    title: 'Trees and Graph Basics',
-    duration: '51 min',
-    topics: ['Tree Terminology', 'Graph Types', 'Traversals'],
+    title: 'Calvin Cycle',
+    duration: '10 min',
+    topics: ['Carbon Fixation', 'G3P', 'RuBisCO'],
     pdf: 'Lecture3_Notes.pdf',
     ppt: 'Lecture3_Slides.pptx',
     locked: true,
@@ -35,12 +35,12 @@ const lectures = [
   {
     id: 'lecture_4',
     number: 4,
-    title: 'Binary Search Trees',
-    duration: '47 min',
-    topics: ['BST Property', 'Insertion & Deletion', 'Search Operations'],
+    title: 'Factors Affecting Photosynthesis',
+    duration: '8 min',
+    topics: ['Light Intensity', 'CO2 Levels', 'Temperature'],
     pdf: 'Lecture4_Notes.pdf',
     ppt: 'Lecture4_Slides.pptx',
-    locked: true, 
+    locked: true,
   },
 ]
 
@@ -92,12 +92,15 @@ const LectureCard = ({ lecture, onWatch }) => {
 
         {/* Files */}
         <div className="flex gap-3 mb-4">
-          <div className={`flex items-center gap-1.5 text-xs ${
-            isLocked ? 'text-gray-400' : 'text-gray-500'
-          }`}>
-            <FileText size={13} />
-            <span>{lecture.pdf}</span>
-          </div>
+          <div
+  onClick={() => window.open(`/${lecture.pdf}`, '_blank')}
+  className={`flex items-center gap-1.5 text-xs cursor-pointer hover:underline ${
+    isLocked ? 'text-gray-400' : 'text-gray-500'
+  }`}
+>
+  <FileText size={13} />
+  <span>{lecture.pdf}</span>
+</div>
           <div className={`flex items-center gap-1.5 text-xs ${
             isLocked ? 'text-gray-400' : 'text-gray-500'
           }`}>
@@ -152,7 +155,7 @@ const Dashboard = () => {
             </div>
             <div  className="cursor-pointer" onClick={() => navigate('/')}>
               <p className="text-xs text-gray-500">BuildVerse LMS</p>
-              <h1 className="text-sm font-semibold text-gray-800">Data Structures & Algorithms</h1>
+             <h1 className="text-sm font-semibold text-gray-800">Biology — Photosynthesis</h1>
             </div>
           </div>
 

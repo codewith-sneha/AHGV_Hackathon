@@ -4,192 +4,195 @@ const formatTime = (seconds) => {
   return `${m}:${s}`
 }
 
-const futureKeywords = ['next', 'later', 'upcoming', 'after', 'design techniques', 'backtracking', 'dynamic programming', 'greedy', 'branch and bound']
-const offTopicKeywords = ['weather', 'food', 'movie', 'cricket', 'stock', 'recipe', 'politics']
-
+const futureKeywords = ['calvin cycle', 'dark reaction', 'rubisco', 'g3p', 'carbon fixation', 'factors', 'temperature', 'light intensity']
+const offTopicKeywords = [
+  'weather', 'food', 'movie', 'cricket', 'stock', 'recipe', 'politics',
+  'algorithm', 'coding', 'time complexity', 'big o', 'sorting', 'array',
+  'linked list', 'binary', 'mitochondria', 'cell division', 'dna', 'rna',
+  'genetics', 'evolution', 'ecosystem', 'osmosis', 'diffusion']
 const responses = {
 
-  algorithm: (ts) => `
-### What is an Algorithm?
+  main: (ts) => `
+### What is Photosynthesis?
 
-An **algorithm** is a step-by-step procedure to solve a computational problem.
+**Photosynthesis** is the process by which plants, algae and cyanobacteria use light energy to turn carbon dioxide and water into sugar, releasing oxygen as a by-product.
 
-**Origin:** The word comes from the name of Persian mathematician **Al-Khwarizmi** (9th century).
+**Basic equation:**
+\`\`\`
+6CO₂ + 6H₂O + Light Energy → C₆H₁₂O₆ + 6O₂
+\`\`\`
 
-**Key Definition:**
-> A finite set of well-defined instructions to solve a problem, given some input, producing an output.
+**Why it matters:**
+- Almost all food chains start with sugar made this way
+- Almost all atmospheric oxygen comes from it
+- Nearly all life on Earth is ultimately fusion-powered (energy from the Sun)
 
-**Five Characteristics (must remember):**
-1. **Input** — zero or more inputs accepted
-2. **Output** — at least one output produced
-3. **Definiteness** — every step must be clear and unambiguous
-4. **Finiteness** — must terminate after a finite number of steps
-5. **Effectiveness** — each step must be basic and feasible
+**Two stages:**
+1. **Light-dependent reactions** — in thylakoid membranes; capture light, produce ATP and NADPH, release O₂
+2. **Calvin cycle (light-independent)** — in stroma; uses ATP and NADPH to fix CO₂ into sugar (G3P)
 
-> 📍 Video [${ts}] — instructor explained this with everyday examples
-> 📄 PDF Pages 1–3 — full definition and characteristics
+**Relation to respiration:**
+- Photosynthesis = cellular respiration in reverse
+- Respiration breaks glucose down; photosynthesis builds it up
+
+> 📍 Video [${ts}] — instructor introduced photosynthesis here
+> 📄 PDF Page 1 — overview, why it matters, two stages
 
 ---
 *Grounded in content watched up to ${ts}*
 `,
 
-  algoVsProgram: (ts) => `
-### Algorithm vs Program
+  chloroplast: (ts) => `
+### The Chloroplast
 
-| | Algorithm | Program |
+Photosynthesis takes place in **chloroplasts** — found in plant cells but NOT in animal cells.
+
+**Key parts:**
+
+| Part | What it is | Role |
 |---|---|---|
-| Phase | Design phase | Implementation phase |
-| Who writes | Domain expert | Programmer |
-| Language | Any (pseudocode, flowchart) | Specific language (C, Java) |
-| Hardware | Independent | Dependent |
-| Lifecycle | Part of SDLC design | Part of SDLC implementation |
+| Thylakoid | Flattened membrane sac | Holds chlorophyll and light reaction complexes |
+| Granum | Stack of thylakoids | Packs large membrane area into small space |
+| Lumen | Space inside thylakoid | H⁺ builds up here to drive ATP production |
+| Stroma | Fluid around thylakoids | Site of the Calvin cycle |
 
-**Key insight:**
-- Algorithm requires **domain knowledge**
-- Program requires **programming skill**
-- An algorithm can be converted to a program in **any language**
+**Chlorophyll:**
+- Absorbs mainly **red and blue** light
+- Reflects **green** light → why leaves look green
+- **Chlorophyll a** is the main pigment
+- **Chlorophyll b** and **carotenoids** are accessory pigments
 
-> 📍 Video [${ts}] — instructor drew the comparison table here
-> 📄 PDF Pages 4–5 — full comparison with SDLC context
-
----
-*Grounded in content watched up to ${ts}*
-`,
-
-  pseudocode: (ts) => `
-### Algorithm Representation
-
-There are **3 ways** to represent an algorithm:
-
-**1. Natural Language**
-- Simple English statements
-- Easy to understand but ambiguous
-
-**2. Pseudocode**
-- Structured English with programming-like syntax
-- Not language specific
-- Example for swapping two numbers:
-\`\`\`
-BEGIN
-  temp = a
-  a = b
-  b = temp
-END
-\`\`\`
-
-**3. Flowcharts**
-- Diagrammatic representation
-- Uses standard symbols:
-  - Oval → Start/End
-  - Rectangle → Process
-  - Diamond → Decision
-  - Arrow → Flow direction
-
-> 📍 Video [${ts}] — instructor drew flowchart symbols here
-> 📄 PDF Pages 5–7 — pseudocode conventions and flowchart examples
+> 📍 Video [${ts}] — instructor explained chloroplast structure here
+> 📄 PDF Page 2 — chloroplast parts and their roles
 
 ---
 *Grounded in content watched up to ${ts}*
 `,
 
-  complexity: (ts) => `
-### Time and Space Complexity
+  lightReactions: (ts) => `
+### Stage 1: Light-Dependent Reactions
 
-**A Priori Analysis** (before execution):
-- Theoretical analysis
-- Count frequency of operations
-- Language and hardware independent ✓
+The light reactions turn light energy into chemical energy and release O₂.
 
-**A Posteriori Analysis** (after execution):
-- Practical measurement
-- Depends on hardware and language ✗
+**Location:** Thylakoid membranes
 
----
+**The four complexes in order:**
 
-**Frequency Count Method:**
-\`\`\`
-for (i = 0; i < n; i++)     // executes n+1 times
-  sum = sum + a[i];          // executes n times
-\`\`\`
-Total = **2n + 1** → O(n)
+1. **Photosystem II (PSII)** — reaction centre P680
+   - Light excites an electron
+   - Splits water: 2H₂O → 4H⁺ + 4e⁻ + **O₂** ← oxygen we breathe!
+   
+2. **Cytochrome b₆f complex**
+   - Passes electrons from PSII to PSI
+   - Pumps H⁺ into lumen
 
-**Nested Loops:**
-\`\`\`
-for (i = 0; i < n; i++)
-  for (j = 0; j < n; j++)
-    // executes n² times → O(n²)
-\`\`\`
+3. **Photosystem I (PSI)** — reaction centre P700
+   - Second photon re-energises electrons
+   
+4. **NADP⁺ reductase**
+   - Produces **NADPH**
 
----
+**ATP production — Chemiosmosis:**
+- H⁺ flows back through **ATP synthase** → makes ATP
+- Called **photophosphorylation**
 
-**Space Complexity:**
-- Fixed part: code, constants
-- Variable part: input data, stack space
-- Total space = Fixed + Variable
+**Outputs:**
+- ATP → goes to Calvin cycle
+- NADPH → goes to Calvin cycle  
+- O₂ → released into atmosphere
 
-> 📍 Video [${ts}] — frequency count method demonstrated here
-> 📄 PDF Pages 10–11 — time and space complexity with examples
+> 📍 Video [${ts}] — instructor explained PSII and photolysis here
+> 📄 PDF Pages 3–4 — full light reactions with four complexes
 
 ---
 *Grounded in content watched up to ${ts}*
 `,
 
-  notation: (ts) => `
-### Asymptotic Notations
+  calvinCycle: (ts) => `
+### Stage 2: Calvin Cycle (Light-Independent Reactions)
 
-Used to describe algorithm performance as input size grows.
+The Calvin cycle uses ATP and NADPH to build sugar from CO₂.
 
-**Big-O (O) — Upper Bound (Worst Case):**
-- Maximum time algorithm will take
-- Most commonly used notation
-- Example: Linear search → O(n)
+**Location:** Stroma
 
-**Big-Omega (Ω) — Lower Bound (Best Case):**
-- Minimum time algorithm will take
-- Example: Linear search → Ω(1) (element at first position)
+**Three phases (per 3 CO₂):**
 
-**Big-Theta (Θ) — Tight Bound (Average Case):**
-- Both upper and lower bound
-- Most precise representation
+1. **Carbon fixation**
+   - RuBisCO attaches CO₂ to RuBP (5-carbon)
+   - Produces 3-PGA (first stable product)
 
-**Common Growth Rates (slowest to fastest):**
+2. **Reduction**
+   - ATP and NADPH convert 3-PGA → G3P
+   - G3P is a high-energy 3-carbon sugar
+
+3. **Regeneration**
+   - 5 of 6 G3P rebuild RuBP using ATP
+   - 1 G3P exits as net product
+
+**Balance sheet (3 turns):**
 \`\`\`
-O(1) < O(log n) < O(n) < O(n log n) < O(n²) < O(2ⁿ) < O(n!)
+3 CO₂ in → 9 ATP used → 6 NADPH used → 1 G3P out
 \`\`\`
 
-> 📍 Video [${ts}] — growth rate graph shown here
-> 📄 PDF Pages 11–12 — all three notations with examples
+**G3P is converted to:**
+- Glucose / sucrose (energy)
+- Starch (storage)
+- Cellulose (cell walls)
+
+> 📍 Video [${ts}] — instructor explained RuBisCO and carbon fixation here
+> 📄 PDF Pages 5–6 — Calvin cycle three phases and balance sheet
 
 ---
 *Grounded in content watched up to ${ts}*
 `,
 
-  gcd: (ts) => `
-### GCD Example — Euclid's Algorithm
+  rubisco: (ts) => `
+### RuBisCO and Photorespiration
 
-**Problem:** Find GCD of two numbers a and b
+**RuBisCO** (ribulose-1,5-bisphosphate carboxylase/oxygenase) fixes carbon in the Calvin cycle.
 
-**Euclid's Algorithm:**
-\`\`\`
-while (b != 0):
-  temp = b
-  b = a % b
-  a = temp
-return a
-\`\`\`
+**Key facts:**
+- Most abundant protein on Earth (~0.7 billion tonnes worldwide)
+- Very **slow** — fixes only a few CO₂ per second
+- Plants compensate by making huge amounts of it
 
-**Dry Run — GCD(12, 8):**
-\`\`\`
-a=12, b=8 → b=12%8=4, a=8
-a=8,  b=4 → b=8%4=0,  a=4
-b=0 → return 4
-GCD(12,8) = 4 ✓
-\`\`\`
+**The problem — Photorespiration:**
+- RuBisCO sometimes binds O₂ instead of CO₂
+- Produces toxic 2-phosphoglycolate
+- Costs ATP, releases CO₂, fixes no new carbon
+- Reduces photosynthetic efficiency
 
-This is one of the oldest algorithms — dates back to **300 BC**.
+**How plants reduce photorespiration:**
 
-> 📍 Video [${ts}] — instructor did this dry run step by step
-> 📄 PDF Pages 3, 8–9 — GCD problem and Euclid's algorithm
+| Type | Strategy | Examples |
+|---|---|---|
+| C3 | No special mechanism | Wheat, rice, most trees |
+| C4 | Concentrates CO₂ around RuBisCO | Maize, sugarcane |
+| CAM | Opens stomata at night only | Cacti, pineapple |
+
+> 📍 Video [${ts}] — instructor explained why RuBisCO is error-prone
+> 📄 PDF Pages 7–8 — RuBisCO, photorespiration, C3/C4/CAM plants
+
+---
+*Grounded in content watched up to ${ts}*
+`,
+
+  inputs: (ts) => `
+### Raw Materials of Photosynthesis
+
+| Input | Entry point | How it gets there |
+|---|---|---|
+| Water (H₂O) | Roots | Up through xylem to leaves |
+| Carbon dioxide (CO₂) | Leaves | Diffuses in through stomata |
+| Light (photons) | Leaves | Absorbed by chlorophyll |
+
+**Stomata:**
+- Tiny pores on leaves
+- CO₂ enters, O₂ exits through same pores
+- Plants keep internal O₂ low to reduce photorespiration
+
+> 📍 Video [${ts}] — instructor explained how plants get their raw materials
+> 📄 PDF Page 2 — inputs table and stomata role
 
 ---
 *Grounded in content watched up to ${ts}*
@@ -200,46 +203,41 @@ This is one of the oldest algorithms — dates back to **300 BC**.
 
 Here is what you have covered so far:
 
-1. **Definition of Algorithm** — step-by-step procedure to solve a problem, origin from Al-Khwarizmi
-2. **5 Characteristics** — Input, Output, Definiteness, Finiteness, Effectiveness
-3. **Algorithm vs Program** — design phase vs implementation phase, domain knowledge vs programming skill
-4. **Representation** — natural language, pseudocode, flowcharts with standard symbols
-5. **Solved Examples** — swap two numbers, sum of array, linear search, Euclid's GCD
-6. **Algorithm Analysis** — A Priori (theoretical) vs A Posteriori (practical)
-7. **Time Complexity** — frequency count method, O(n), O(n²) for nested loops
-8. **Space Complexity** — fixed + variable parts
-9. **Asymptotic Notations** — Big-O (worst), Big-Omega (best), Big-Theta (average)
+1. **Photosynthesis** — plants convert light + CO₂ + H₂O → glucose + O₂
+2. **Why it matters** — base of all food chains, source of atmospheric oxygen
+3. **Chloroplast structure** — thylakoid, granum, lumen, stroma
+4. **Chlorophyll** — absorbs red and blue light, reflects green
+5. **Stage 1: Light reactions** — PSII → Cyt b₆f → PSI → NADP⁺ reductase; produces ATP, NADPH, O₂
+6. **Chemiosmosis** — H⁺ gradient drives ATP synthase → ATP
+7. **Stage 2: Calvin cycle** — carbon fixation → reduction → regeneration → G3P
+8. **RuBisCO** — fixes CO₂, most abundant protein, causes photorespiration
+9. **C3/C4/CAM** — strategies to reduce photorespiration
 
-> 📍 [01:30] — algorithm definition and characteristics
-> 📍 [04:45] — algorithm vs program comparison table
-> 📍 [07:20] — pseudocode and flowchart symbols
-> 📍 [09:10] — Euclid's GCD dry run
+> 📍 [00:30] — photosynthesis overview
+> 📍 [02:00] — chloroplast structure
+> 📍 [04:00] — light reactions
+> 📍 [07:00] — Calvin cycle
 > 📍 [${ts}] — current position
-> 📄 PDF Pages 1–12 — all above concepts
+> 📄 PDF Pages 1–8 — all above concepts
 
 ---
 *Summary grounded in content watched up to ${ts}*
 `,
 
   mockInterview: (ts) => `
-### 🎯 Mock Interview — Introduction to Algorithms
+### 🎯 Mock Interview — Photosynthesis
 
 Based on content up to **${ts}**:
 
-**Q1:** State and explain the five characteristics of an algorithm.
+**Q1:** Write the equation for photosynthesis and explain each component.
 
-**Q2:** What is the difference between A Priori and A Posteriori analysis? Which is preferred and why?
+**Q2:** Where does the O₂ released during photosynthesis come from — CO₂ or H₂O?
 
-**Q3:** Find the time complexity of this code:
-\`\`\`
-for (i = 0; i < n; i++)
-  for (j = 0; j < n; j++)
-    print(i + j)
-\`\`\`
+**Q3:** What is the difference between the light-dependent reactions and the Calvin cycle?
 
-**Q4:** What is the difference between Big-O, Big-Omega and Big-Theta notation?
+**Q4:** What is chemiosmosis and how does it produce ATP?
 
-**Q5:** Convert Euclid's GCD algorithm to pseudocode and do a dry run for GCD(16, 4).
+**Q5:** Why is RuBisCO considered inefficient and what is photorespiration?
 
 ---
 *Answer below and I will give you feedback!*
@@ -248,31 +246,26 @@ for (i = 0; i < n; i++)
   explain: (ts) => `
 ### Explanation — Last Section Covered
 
-Around **${ts}**, the instructor was covering **Algorithm Analysis**:
+Around **${ts}**, the instructor was covering the **light-dependent reactions**:
 
-**A Priori Analysis:**
-- Done BEFORE running the program
-- Count number of operations mathematically
-- Result is independent of hardware/language
-- We use this in practice ✓
-
-**Frequency Count Method:**
+**Photolysis — splitting of water:**
 \`\`\`
-Statement          | Frequency
--------------------|----------
-int sum = 0;       | 1
-i = 0;             | 1  
-i < n (check)      | n+1
-sum = sum + a[i]   | n
-i++                | n
-return sum         | 1
-Total              | 3n + 4 → O(n)
+2H₂O → 4H⁺ + 4e⁻ + O₂
 \`\`\`
+- O₂ released = the oxygen we breathe
+- H⁺ stays in lumen to drive ATP synthesis
 
-This is how we calculate time complexity without running the code.
+**Electron transport chain:**
+- Excited electrons pass through PSII → Cyt b₆f → PSI
+- Energy captured at each step
 
-> 📍 Video [${ts}] — this was explained just now
-> 📄 PDF Page 10 — frequency count method table
+**Chemiosmosis:**
+- H⁺ builds up in lumen
+- Flows through ATP synthase → makes ATP
+- Called photophosphorylation
+
+> 📍 Video [${ts}] — this was just explained
+> 📄 PDF Pages 3–4 — light reactions detail
 
 ---
 *Grounded in content watched up to ${ts}*
@@ -291,17 +284,15 @@ Keep watching — it will be explained in the upcoming section! 🎯
 
 This question is not related to the current course content.
 
-Please ask questions about the lecture, PDF or slides loaded in this session.
+Please ask questions about the **Photosynthesis** lecture loaded in this session.
 `
 }
 
 export const mockIngest = async (lectureId) => {
-  await new Promise(r => setTimeout(r, 1500))
   return { success: true, lecture_id: lectureId, message: 'Lecture ready' }
 }
 
 export const mockQuery = async (question, lectureId, timestampSeconds) => {
-  await new Promise(r => setTimeout(r, 900))
   const ts = formatTime(timestampSeconds)
   const q = question.toLowerCase()
 
@@ -320,23 +311,26 @@ export const mockQuery = async (question, lectureId, timestampSeconds) => {
   if (q.includes('last 2 minutes') || q.includes('last two minutes') || q.includes('just now') || q.includes('explain'))
     return { answer: responses.explain(ts), type: 'explain' }
 
-  if (q.includes('gcd') || q.includes('euclid'))
-    return { answer: responses.gcd(ts), type: 'past' }
+  if (q.includes('rubisco') || q.includes('photorespiration') || q.includes('c3') || q.includes('c4') || q.includes('cam'))
+    return { answer: responses.rubisco(ts), type: 'past' }
 
-  if (q.includes('complexity') || q.includes('big o') || q.includes('time') || q.includes('space') || q.includes('frequency'))
-    return { answer: responses.complexity(ts), type: 'past' }
+  if (q.includes('calvin') || q.includes('dark reaction') || q.includes('light independent') || q.includes('g3p') || q.includes('carbon fixation') || q.includes('rubp'))
+    return { answer: responses.calvinCycle(ts), type: 'past' }
 
-  if (q.includes('notation') || q.includes('omega') || q.includes('theta') || q.includes('asymptotic'))
-    return { answer: responses.notation(ts), type: 'past' }
+  if (q.includes('light reaction') || q.includes('psii') || q.includes('psi') || q.includes('atp') || q.includes('nadph') || q.includes('chemiosmosis') || q.includes('photolysis') || q.includes('thylakoid'))
+    return { answer: responses.lightReactions(ts), type: 'past' }
 
-  if (q.includes('pseudocode') || q.includes('flowchart') || q.includes('represent'))
-    return { answer: responses.pseudocode(ts), type: 'past' }
+  if (q.includes('chloroplast') || q.includes('stroma') || q.includes('granum') || q.includes('lumen'))
+    return { answer: responses.chloroplast(ts), type: 'past' }
 
-  if (q.includes('program') || q.includes('difference') || q.includes('sdlc') || q.includes('domain'))
-    return { answer: responses.algoVsProgram(ts), type: 'past' }
+  if (q.includes('chlorophyll') || q.includes('green') || q.includes('pigment') || q.includes('absorb'))
+    return { answer: responses.chloroplast(ts), type: 'past' }
 
-  if (q.includes('algorithm') || q.includes('characteristic') || q.includes('definition') || q.includes('what is'))
-    return { answer: responses.algorithm(ts), type: 'past' }
+  if (q.includes('water') || q.includes('co2') || q.includes('carbon dioxide') || q.includes('stomata') || q.includes('input') || q.includes('raw material'))
+    return { answer: responses.inputs(ts), type: 'past' }
 
-  return { answer: responses.algorithm(ts), type: 'past' }
+  if (q.includes('photosynthesis') || q.includes('what is') || q.includes('definition') || q.includes('equation') || q.includes('glucose') || q.includes('oxygen') || q.includes('overview'))
+    return { answer: responses.main(ts), type: 'past' }
+
+  return { answer: responses.main(ts), type: 'past' }
 }

@@ -4,7 +4,7 @@ import { Send, Bot, User, Loader2 } from 'lucide-react'
 import { mockQuery } from '../services/mockApi'
 import { queryAssistant } from '../services/api'
 
-const USE_MOCK = true
+const USE_MOCK = false
 
 const QUICK_CHIPS = [
   'Summarize what I learned so far',
@@ -82,48 +82,104 @@ const ChatPanel = ({ lectureId, currentTime, formattedTime, pauseAndGetTime, see
 
   const [history, setHistory] = useState([])
 
-  const renderContent = (content) => {
-    const parts = []
-    let lastIndex = 0
-    let match
-    const regex = /\[(\d{2}:\d{2})\]/g
+const renderContent = (content, citations = []) => {
+  // Replace [n] with hoverable citation badges
+  const parts = []
+  let lastIndex = 0
+  const citationRegex = /\[(\d+)\]/g
+  const timestampRegex = /\[(\d{2}:\d{2})\]/g
+  let match
 
-    while ((match = regex.exec(content)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(content.slice(lastIndex, match.index))
-      }
-      const timeStr = match[1]
+  // First handle [MM:SS] timestamps
+  const processTimestamps = (text) => {
+    const parts = []
+    let last = 0
+    let m
+    const re = /\[(\d{2}:\d{2})\]/g
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) parts.push(text.slice(last, m.index))
+      const timeStr = m[1]
       const seconds = parseTimestamp(timeStr)
       parts.push(
         <button
-          key={match.index}
+          key={`ts-${m.index}`}
           onClick={() => seekTo(seconds)}
           className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold hover:bg-blue-200 transition mx-1"
         >
           ▶ {timeStr}
         </button>
       )
-      lastIndex = match.index + match[0].length
+      last = m.index + m[0].length
     }
-
-    if (lastIndex < content.length) {
-      parts.push(content.slice(lastIndex))
-    }
-
-    if (parts.length === 1 && typeof parts[0] === 'string') {
-      return <ReactMarkdown>{content}</ReactMarkdown>
-    }
-
-    return (
-      <div className="text-sm text-gray-800">
-        {parts.map((part, i) =>
-          typeof part === 'string'
-            ? <ReactMarkdown key={i}>{part}</ReactMarkdown>
-            : part
-        )}
-      </div>
-    )
+    if (last < text.length) parts.push(text.slice(last))
+    return parts
   }
+
+  // Handle [n] citation references
+  const processText = (text) => {
+    const parts = []
+    let last = 0
+    let m
+    const re = /\[(\d+)\]/g
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) {
+        processTimestamps(text.slice(last, m.index)).forEach(p => parts.push(p))
+      }
+      const num = parseInt(m[1])
+      const citation = citations[num - 1]
+      parts.push(
+        <span key={`cit-${m.index}`} className="relative group inline-block">
+          <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-600 text-white rounded-full text-xs font-bold cursor-pointer hover:bg-blue-700 mx-0.5">
+            {num}
+          </span>
+          {citation && (
+            <span className="absolute bottom-6 left-0 z-50 hidden group-hover:block w-64 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+              <span className="font-semibold block mb-1">
+                {citation.kind === 'video' ? '📍 Video' : '📄 PDF'} — {citation.label || citation.source}
+              </span>
+              {citation.snippet && (
+                <span className="text-gray-300 block">{citation.snippet.slice(0, 120)}...</span>
+              )}
+              {citation.seek_to !== undefined && (
+                <button
+                  onClick={() => seekTo(citation.seek_to)}
+                  className="mt-2 text-blue-300 hover:text-blue-100 text-xs underline block"
+                >
+                  ▶ Jump to {citation.label}
+                </button>
+              )}
+            </span>
+          )}
+        </span>
+      )
+      last = m.index + m[0].length
+    }
+    if (last < text.length) {
+      processTimestamps(text.slice(last)).forEach(p => parts.push(p))
+    }
+    return parts
+  }
+
+  return (
+    <div className="text-sm text-gray-800 leading-relaxed">
+      <ReactMarkdown
+        components={{
+          p: ({ children }) => (
+            <p className="mb-2">
+              {typeof children === 'string'
+                ? processText(children)
+                : children
+              }
+            </p>
+          ),
+          text: ({ value }) => <>{processText(value)}</>
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  )
+}
 
   return (
     <div className="flex flex-col h-full bg-white border-l border-gray-200">
@@ -158,7 +214,7 @@ const ChatPanel = ({ lectureId, currentTime, formattedTime, pauseAndGetTime, see
             }`}>
               {msg.role === 'user'
                 ? <p>{msg.content}</p>
-                : renderContent(msg.content)
+                : renderContent(msg.content, msg.citations || [])
               }
             </div>
             {msg.role === 'user' && (

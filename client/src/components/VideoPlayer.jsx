@@ -1,38 +1,47 @@
-import { useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
-const VideoPlayer = ({ playerRef }) => {
-  const videoRef = useRef(null)
+export const useVideoTime = (playerRef) => {
+  const [currentTime, setCurrentTime] = useState(0)
+  const intervalRef = useRef(null)
 
   useEffect(() => {
-    if (!videoRef.current) return
+    intervalRef.current = setInterval(() => {
+      const player = playerRef?.current
+      if (player && typeof player.currentTime === 'function') {
+        const t = player.currentTime()
+        if (t !== undefined && t !== null) {
+          setCurrentTime(t)
+        }
+      }
+    }, 500)
 
-    playerRef.current = {
-      currentTime: (t) => {
-        if (!videoRef.current) return 0
-        if (t !== undefined) videoRef.current.currentTime = t
-        return videoRef.current.currentTime
-      },
-      pause: () => videoRef.current?.pause(),
-      play: () => videoRef.current?.play(),
-      isDisposed: () => false,
-    }
-
-    return () => {
-      playerRef.current = null
-    }
+    return () => clearInterval(intervalRef.current)
   }, [])
 
-  return (
-    <div className="w-full">
-      <video
-        ref={videoRef}
-        src="/lecture.mp4"
-        controls
-        playsInline
-        className="w-full lg:max-h-[60vh] max-h-[35vh]"
-      />
-    </div>
-  )
-}
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0')
+    const s = Math.floor(seconds % 60).toString().padStart(2, '0')
+    return `${m}:${s}`
+  }
 
-export default VideoPlayer
+  const seekTo = (seconds) => {
+    const player = playerRef?.current
+    if (!player) return
+    player.currentTime(seconds)
+    player.play()
+  }
+
+  const pauseAndGetTime = () => {
+    const player = playerRef?.current
+    if (!player) return 0
+    player.pause()
+    return player.currentTime() || 0
+  }
+
+  return {
+    currentTime,
+    formattedTime: formatTime(currentTime),
+    seekTo,
+    pauseAndGetTime,
+  }
+}
