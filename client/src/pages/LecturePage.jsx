@@ -156,7 +156,7 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
         {/* LEFT — Video (fixed, doesn't grow) */}
         <div className="lg:w-[70%] w-full flex flex-col lg:overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200 shrink-0">
           {/* Video */}
-          <div className="w-full bg-black shrink-0">
+          <div className="w-full  shrink-0">
             <video
               ref={initPlayer}
               src="/lecture.mp4"
@@ -193,13 +193,22 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
         </div>
       </div>
     )}
-   {activeTab === 'pdf' && (
-  <iframe
-    src="https://drive.google.com/file/d/1rebrqWGGo8WgYT3RqEYc8Ez0sQz3DLxh/preview"
-    className="w-full h-full border-0"
-    title="PDF Notes"
-    allow="autoplay"
-  />
+  {activeTab === 'pdf' && (
+  <div className="-mx-0 overflow-hidden" style={{ height: '300px' }}>
+    <iframe
+      src="https://drive.google.com/file/d/1rebrqWGGo8WgYT3RqEYc8Ez0sQz3DLxh/preview"
+      className="border-0"
+      style={{ 
+        width: '100%', 
+        height: '400px',
+        marginLeft: '-80px',
+        marginRight: '-80px',
+        width: 'calc(100% + 160px)'
+      }}
+      title="PDF Notes"
+      allow="autoplay"
+    />
+  </div>
 )}
     {activeTab === 'slides' && (
       <div className="p-4 flex items-center gap-3">

@@ -93,10 +93,11 @@ const LectureCard = ({ lecture, onWatch }) => {
         {/* Files */}
         <div className="flex gap-3 mb-4">
           <div
-  onClick={() => window.open(`/${lecture.pdf}`, '_blank')}
+  onClick={() => window.open('https://drive.google.com/file/d/1rebrqWGGo8WgYT3RqEYc8Ez0sQz3DLxh/preview', '_blank')}
   className={`flex items-center gap-1.5 text-xs cursor-pointer hover:underline ${
     isLocked ? 'text-gray-400' : 'text-gray-500'
   }`}
+ 
 >
   <FileText size={13} />
   <span>{lecture.pdf}</span>
