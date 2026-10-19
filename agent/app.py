@@ -195,9 +195,13 @@ def guard_ok(c: Chunk, scope: Scope) -> bool:
             and c.end is not None
             and c.end <= scope.pause_time + 1e-6
         )
-    if scope.allowed_resources is not None:
-        return c.source in scope.allowed_resources
-    return True
+    
+    # If it's a document, strictly check if it's in the allowed list
+    # If allowed_resources is None or [], this evaluates to False (blocking the document)
+    if not scope.allowed_resources:
+        return False
+        
+    return c.source in scope.allowed_resources
 
 def future_ok(c: Chunk, scope: Scope) -> bool:
     """Guard for the 'will this be covered later?' check: only LATER parts of the SAME video qualify
@@ -489,11 +493,14 @@ class LearningAgent:
         return models.Filter(must=must)
 
     def _doc_filter(self, scope: Scope) -> Optional[models.Filter]:
-        if scope.allowed_resources is not None and not scope.allowed_resources:
-            return None  # explicitly no documents permitted
-        must = [models.FieldCondition(key=F_KIND, match=models.MatchAny(any=sorted(DOC_KINDS)))]
-        if scope.allowed_resources is not None:
-            must.append(models.FieldCondition(key=F_SOURCE, match=models.MatchAny(any=scope.allowed_resources)))
+        # Treat both None and [] as "no documents permitted"
+        if not scope.allowed_resources:
+            return None 
+            
+        must = [
+            models.FieldCondition(key=F_KIND, match=models.MatchAny(any=sorted(DOC_KINDS))),
+            models.FieldCondition(key=F_SOURCE, match=models.MatchAny(any=scope.allowed_resources))
+        ]
         return models.Filter(must=must)
 
     def _scoped(self, scope: Scope, video: bool, docs: bool) -> Optional[models.Filter]:
