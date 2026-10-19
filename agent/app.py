@@ -695,6 +695,7 @@ class LearningAgent:
         recent = self._recent(scope) if (deictic and not docs_only) else []
 
         qtext = req.question
+        topic = qtext  # Initialize topic here so it always exists
         if req.history and len(req.question.split()) < 7:
             prev = next((h.content for h in reversed(req.history) if h.role == "user"), "")
             qtext = f"{clip(prev, 200)} {req.question}"
