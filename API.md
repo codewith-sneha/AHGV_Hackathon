@@ -8,6 +8,50 @@ Base URL: `https://ahgv-learning-backend.onrender.com`
 
 ---
 
+
+---
+
+### POST /api/ingest
+
+Ingests course content (video transcript, PDF, PPT) into the vector database for a given lecture.
+
+**Request Body:**
+~~~json
+{
+  "lecture_id": "L01",
+  "video_url": "/lecture.mp4",
+  "pdf_url": "/Lecture1_Notes.pdf",
+  "ppt_url": "/Lecture1_Slides.pptx"
+}
+~~~
+
+**Parameters:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| lecture_id | string | ✓ | Unique lecture identifier |
+| video_url | string | ✓ | Path or URL to video file |
+| pdf_url | string | ✗ | Path or URL to PDF notes |
+| ppt_url | string | ✗ | Path or URL to PPT slides |
+
+**Response:**
+~~~json
+{
+  "success": true,
+  "lecture_id": "L01",
+  "message": "Lecture ingested successfully"
+}
+~~~
+
+**What it does:**
+- Transcribes video using Whisper
+- Extracts text from PDF using PyMuPDF
+- Chunks all content with timestamps
+- Generates embeddings using sentence-transformers
+- Stores in Qdrant vector database
+- Ready for /api/chat queries
+
+
 ### POST /api/chat
 
 Main chat endpoint. Returns AI answer grounded in watched content only.
