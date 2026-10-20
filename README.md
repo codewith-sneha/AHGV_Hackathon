@@ -31,9 +31,9 @@ An AI-powered learning platform where students can ask questions about lecture c
 | Backend Deploy | Render |
 
 ---
-
 ## Project Structure
 
+```
 AHGV_Hackathon/
 ├── client/                  # React frontend
 │   ├── src/
@@ -66,6 +66,7 @@ AHGV_Hackathon/
 └── agent/                   # LangGraph agent
     ├── app.py
     └── requirements.txt
+```
 
 ---
 
