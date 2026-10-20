@@ -138,6 +138,39 @@ Check if backend is running.
 
 ---
 
+---
+
+## Gemini API — LLM Integration
+
+The backend uses **Google Gemini** as the LLM for generating answers.
+
+### Model Used
+~~~
+gemini-2.0-flash
+~~~
+
+### How It Works
+
+1. Student question + video transcript chunks + PDF chunks are sent to Gemini
+2. Gemini generates a grounded answer using only the provided context
+3. Response includes citations back to source chunks
+4. If no relevant content found → refused = true
+
+### Gemini API Setup
+
+Get your API key from:
+~~~
+https://aistudio.google.com/app/apikey
+~~~
+
+Add to backend `.env`:
+~~~env
+GEMINI_API_KEY=your_key_here
+GEMINI_MODEL=gemini-2.0-flash
+~~~
+
+---
+
 ## Frontend API Integration
 
 ```js
