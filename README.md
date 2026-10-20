@@ -34,7 +34,6 @@ An AI-powered learning platform where students can ask questions about lecture c
 
 ## Project Structure
 
-~~~
 AHGV_Hackathon/
 ├── client/                  # React frontend
 │   ├── src/
@@ -52,11 +51,21 @@ AHGV_Hackathon/
 │   └── public/
 │       ├── lecture.mp4        (not tracked in git)
 │       └── Lecture1_Notes.pdf
-└── server/                  # FastAPI backend
-    ├── main.py
-    ├── agent.py
+├── backend/                 # FastAPI backend
+│   ├── app/
+│   │   ├── routes/
+│   │   │   ├── ingest.py
+│   │   │   └── query.py
+│   │   ├── services/
+│   │   │   ├── pdf_service.py
+│   │   │   ├── qdrant_service.py
+│   │   │   └── whisper_service.py
+│   │   ├── config.py
+│   │   └── main.py
+│   └── requirements.txt
+└── agent/                   # LangGraph agent
+    ├── app.py
     └── requirements.txt
-~~~
 
 ---
 
