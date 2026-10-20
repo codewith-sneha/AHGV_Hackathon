@@ -14,19 +14,18 @@ An AI-powered learning platform where students can ask questions about lecture c
 - Off-topic questions → "Out of scope"
 
 ---
-
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
 | Frontend | React (Vite) + Tailwind CSS |
 | Backend | FastAPI (Python) |
-| LLM | Gemini API / OpenRouter |
-| Embeddings | sentence-transformers |
-| Vector DB | ChromaDB |
+| LLM | Gemini API |
+| Embeddings | sentence-transformers (Hugging Face)  |
+| Vector DB | Qdrant |
+| Orchestration | RAG |
 | Transcription | Whisper (OpenAI) |
 | PDF/PPT Parsing | PyMuPDF + python-pptx |
-| Orchestration | LangGraph |
 | Frontend Deploy | Vercel |
 | Backend Deploy | Render |
 
@@ -108,7 +107,7 @@ pip install -r requirements.txt
 cp .env.example .env
 
 # Start backend server
-uvicorn main:app --reload --port 8000
+uvicorn app:app --reload --port 8000
 ~~~
 
 ---
