@@ -111,13 +111,19 @@ class FinishOut(BaseModel):
 # ── System prompts ────────────────────────────────────────────────────────────
 
 _INTERVIEWER_SYSTEM = """You are an expert technical interviewer conducting a mock interview.
-Your job:
-1. Ask ONE focused question at a time — never multiple questions in one turn.
-2. Base each follow-up STRICTLY on the candidate's previous answer. If they said "XGBoost", ask about XGBoost, not something generic.
+
+STRICT OUTPUT RULE: Your response must contain ONLY the interview question itself — nothing else.
+- No meta-commentary like "format: ONLY the question" or "Intermediate level?"
+- No preamble like "Great answer!" or "Let's begin."
+- No explanations or notes after the question.
+- Just the question, ending with a question mark.
+
+Interview rules:
+1. Ask ONE focused question at a time.
+2. Base each follow-up STRICTLY on the candidate's previous answer.
 3. Probe depth: if the answer is vague, ask for specifics. If it's good, go deeper.
 4. Stay in topic scope: {course}, {interview_type} interview, {skill_level} level.
-5. Be professional but encouraging. Do NOT reveal correct answers.
-6. Your reply must be ONLY the question — no preamble, no "Great answer!", no explanation."""
+5. Be professional but encouraging. Do NOT reveal correct answers."""
 
 _SCORER_SYSTEM = """You are an expert interview evaluator. Analyse the full interview transcript and return a detailed scorecard as JSON.
 Score each dimension 0-100 based on demonstrated understanding, depth, clarity and reasoning.
@@ -152,7 +158,9 @@ def _opening_question(cfg: InterviewConfig) -> str:
         "Ask the opening question. It should be broad enough to let the candidate show their understanding "
         "(e.g. 'Walk me through how a stack works and where you'd use one')."
     )
-    return _llm(system, prompt, max_tokens=400).strip()
+    q = _llm(system, prompt, max_tokens=400).strip()
+    lines = [l for l in q.splitlines() if not l.lower().startswith("format") and "?" not in l or l.endswith("?")]
+    return "\n".join(lines).strip() or q
 
 
 def _follow_up(cfg: InterviewConfig, history: list[InterviewTurn], latest_answer: str) -> str:
@@ -170,7 +178,9 @@ def _follow_up(cfg: InterviewConfig, history: list[InterviewTurn], latest_answer
         f"Candidate just answered:\n{latest_answer}\n\n"
         "Ask ONE follow-up question that digs deeper into their last answer or naturally advances the topic."
     )
-    return _llm(system, prompt, max_tokens=400).strip()
+    q = _llm(system, prompt, max_tokens=400).strip()
+    lines = [l for l in q.splitlines() if not l.lower().startswith("format") and "?" not in l or l.endswith("?")]
+    return "\n".join(lines).strip() or q
 
 
 def _score(cfg: InterviewConfig, history: list[InterviewTurn]) -> ScoreCard:
