@@ -30,7 +30,8 @@ def _get_client():
     with _gemini_lock:
         if _gemini_client is None:
             from google import genai
-            _gemini_client = genai.Client()
+            api_key = os.getenv("INTERVIEW_GEMINI_API_KEY")
+            _gemini_client = genai.Client(api_key=api_key)
     return _gemini_client
 
 def _llm(system: str, prompt: str, json_mode: bool = False, max_tokens: int = 800) -> str:
