@@ -18,11 +18,11 @@ EOF
 
 
 # local qdrant test data
-test_qdrant/
-qdrant_data/
+agent/test_qdrant/
+agent/qdrant_data/
 
 # throwaway test scripts
-seed_test.py
-test_groq.py
-list_groq.py
-inspect_qdrant.py
+agent/seed_test.py
+agent/.py
+agent/list_groq.py
+agent/inspect_qdrant.py
