@@ -7,16 +7,18 @@ import {
   PlayCircle,
   Loader2,
   BookOpen,
+  HelpCircle,
 } from "lucide-react";
+
 import ChatPanel from "../components/ChatPanel";
 import QuizModal from "../components/QuizModal";
 import { useVideoTime } from "../hooks/useVideoTime";
-// { mockIngest } from '../services/mockApi'
-// { ingestLecture } from '../services/api'
 import { fetchMockQuiz } from "../services/mockQuiz";
 
-const USE_MOCK = false;
-const END_QUIZ_TRIGGER_RATIO = 0.98; // change when lead confirms exact timing
+const END_QUIZ_TRIGGER_RATIO = 0.98;
+// true  = skip the end quiz if every question was already shown
+// false = always show the end quiz (repeats a question if all were seen)
+const SKIP_END_QUIZ_IF_ALL_ASKED = true;
 
 const lectureData = {
   lecture_1: {
@@ -28,11 +30,11 @@ const lectureData = {
     pdfEmbed:
       "https://drive.google.com/file/d/1rebrqWGGo8WgYT3RqEYc8Ez0sQz3DLxh/preview",
     ppt: "Lecture1_Slides.pptx",
-    duration: "9 min",
+    duration: "13 min",
   },
 };
 
-//  State 1: Course Overview
+// --- 1. Start Learning Card (Lecture Overview) ---
 const LectureOverview = ({
   lecture,
   lectureId,
@@ -40,15 +42,17 @@ const LectureOverview = ({
   loading,
   navigate,
 }) => (
-  <div className="min-h-screen bg-gray-50 flex flex-col">
-    <header className="bg-white border-b border-gray-200">
+  <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col transition-colors duration-300">
+    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
       <div className="mx-auto px-6 py-4 flex items-center gap-3">
-        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+        <div className="w-8 h-8 bg-[#3E3AF7] rounded-lg flex items-center justify-center">
           <BookOpen size={16} className="text-white" />
         </div>
         <div className="cursor-pointer" onClick={() => navigate("/")}>
-          <p className="text-xs text-gray-500">BuildVerse LMS</p>
-          <h1 className="text-sm font-semibold text-gray-800">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Syntax Squad
+          </p>
+          <h1 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
             Biology — Photosynthesis
           </h1>
         </div>
@@ -56,45 +60,55 @@ const LectureOverview = ({
     </header>
 
     <main className="flex-1 flex items-center justify-center px-6 py-12">
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm max-w-lg w-full p-8">
-        <span className="text-xs font-semibold px-3 py-1 bg-blue-50 text-blue-600 rounded-full">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm max-w-lg w-full p-8">
+        <span className="text-xs font-semibold px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">
           {lecture.duration}
         </span>
 
-        <h2 className="text-2xl font-bold text-gray-900 mt-4 mb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-4 mb-2">
           {lecture.title}
         </h2>
-        <p className="text-gray-500 text-sm mb-6">{lecture.description}</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
+          {lecture.description}
+        </p>
 
-        <div className="bg-gray-50 rounded-xl p-4 mb-6 space-y-3">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 mb-6 space-y-3">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             Course Materials
           </p>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-red-50 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
               <FileText size={15} className="text-red-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-700">{lecture.pdf}</p>
-              <p className="text-xs text-gray-400">PDF • Lecture Notes</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                {lecture.pdf}
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                PDF • Lecture Notes
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-orange-50 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
               <Presentation size={15} className="text-orange-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-700">{lecture.ppt}</p>
-              <p className="text-xs text-gray-400">PowerPoint • Slides</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                {lecture.ppt}
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                PowerPoint • Slides
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-blue-50 rounded-xl p-4 mb-6">
-          <p className="text-xs text-blue-700 font-medium mb-1">
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 mb-6">
+          <p className="text-xs text-blue-700 dark:text-blue-400 font-medium mb-1">
             🤖 AI Learning Assistant Enabled
           </p>
-          <p className="text-xs text-blue-600">
+          <p className="text-xs text-blue-600 dark:text-blue-300">
             Pause anytime and ask questions. The AI will only answer from
             content you've watched so far.
           </p>
@@ -103,7 +117,7 @@ const LectureOverview = ({
         <button
           onClick={() => onStart(lectureId)}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition disabled:opacity-70 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-2 bg-[#3E3AF7] hover:bg-[#3230d6] text-white font-semibold py-3.5 rounded-xl transition disabled:opacity-70 disabled:cursor-not-allowed"
         >
           {loading ? (
             <>
@@ -121,7 +135,7 @@ const LectureOverview = ({
   </div>
 );
 
-// ── State 2: Player + Chat ────────────────────────────────
+// --- 2. Video Player + Chat Panel ---
 const LecturePlayer = ({ lectureId, lecture, navigate }) => {
   const videoRef = useRef(null);
   const playerRef = useRef(null);
@@ -132,6 +146,24 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
   const [quizOpen, setQuizOpen] = useState(false);
   const [quizData, setQuizData] = useState(null);
   const [quizShown, setQuizShown] = useState(false);
+  const [quizLoading, setQuizLoading] = useState(false);
+
+  // indices of questions already shown in this session
+  const askedRef = useRef(new Set());
+
+  // Picks the next unseen question.
+  // If all were seen: restart the cycle (allowRepeat) or return null.
+  const pickQuestion = (list, allowRepeat) => {
+    if (!Array.isArray(list) || list.length === 0) return null;
+    let idx = list.findIndex((_, i) => !askedRef.current.has(i));
+    if (idx === -1) {
+      if (!allowRepeat) return null;
+      askedRef.current.clear();
+      idx = 0;
+    }
+    askedRef.current.add(idx);
+    return list[idx];
+  };
 
   const initPlayer = (el) => {
     if (!el) return;
@@ -148,7 +180,31 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
     };
   };
 
-  // Trigger end quiz
+  // Progress tracking
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleTimeUpdate = () => {
+      if (video.currentTime > 0 && video.duration) {
+        const percent = Math.round((video.currentTime / video.duration) * 100);
+        const savedProgress = JSON.parse(
+          localStorage.getItem("lectureProgress") || "{}",
+        );
+        if (!savedProgress[lectureId] || percent > savedProgress[lectureId]) {
+          savedProgress[lectureId] = percent;
+          localStorage.setItem(
+            "lectureProgress",
+            JSON.stringify(savedProgress),
+          );
+        }
+      }
+    };
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
+  }, [lectureId]);
+
+  // End-of-video quiz trigger
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -159,21 +215,42 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
       if (!duration || isNaN(duration)) return;
 
       if (video.currentTime / duration >= END_QUIZ_TRIGGER_RATIO) {
-        video.pause();
         setQuizShown(true);
         try {
           const data = await fetchMockQuiz();
-          setQuizData(data.quiz[0]);
-          setQuizOpen(true);
+          const q = pickQuestion(data.quiz, !SKIP_END_QUIZ_IF_ALL_ASKED);
+          if (q) {
+            video.pause();
+            setQuizData(q);
+            setQuizOpen(true);
+          }
         } catch (err) {
           console.error("Quiz fetch failed:", err);
         }
       }
     };
-
     video.addEventListener("timeupdate", handleTimeUpdate);
     return () => video.removeEventListener("timeupdate", handleTimeUpdate);
   }, [quizShown, quizOpen]);
+
+  // Manual quiz button
+  const openQuiz = async () => {
+    if (quizLoading || quizOpen) return;
+    videoRef.current?.pause();
+    setQuizLoading(true);
+    try {
+      const data = await fetchMockQuiz();
+      const q = pickQuestion(data.quiz, true);
+      if (q) {
+        setQuizData(q);
+        setQuizOpen(true);
+      }
+    } catch (err) {
+      console.error("Quiz fetch failed:", err);
+    } finally {
+      setQuizLoading(false);
+    }
+  };
 
   const handleQuizClose = () => {
     setQuizOpen(false);
@@ -182,7 +259,7 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
 
   return (
     <div
-      className="flex flex-col bg-gray-50 overflow-hidden"
+      className="flex flex-col bg-gray-50 dark:bg-gray-950 overflow-hidden transition-colors duration-300"
       style={{ height: "100dvh" }}
     >
       {quizOpen && quizData && (
@@ -190,38 +267,51 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
       )}
 
       {/* Top Bar */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0">
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition cursor-pointer"
+            className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition cursor-pointer"
           >
             <ArrowLeft size={16} />
             <span className="hidden sm:inline">Back</span>
           </button>
-          <span className="text-gray-300">|</span>
+          <span className="text-gray-300 dark:text-gray-600">|</span>
           <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 bg-blue-600 rounded-md flex items-center justify-center shrink-0">
+            <div className="w-5 h-5 bg-[#3E3AF7] rounded-md flex items-center justify-center shrink-0">
               <BookOpen size={11} className="text-white" />
             </div>
-            <span className="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-1">
+            <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 line-clamp-1">
               {lecture.title}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-gray-900 text-white px-2.5 py-1.5 rounded-full text-xs font-mono shrink-0">
-          <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-          {formattedTime}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={openQuiz}
+            disabled={quizLoading}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3E3AF7] hover:bg-[#3230d6] text-white rounded-lg text-xs font-semibold transition disabled:opacity-60"
+          >
+            {quizLoading ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <HelpCircle size={13} />
+            )}
+            Quiz
+          </button>
+          <div className="flex items-center gap-1.5 bg-gray-900 dark:bg-gray-800 text-white px-2.5 py-1.5 rounded-full text-xs font-mono">
+            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+            {formattedTime}
+          </div>
         </div>
       </header>
 
-      {/* Split Screen */}
+      {/* Main Split Screen */}
       <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
-        {/* LEFT — Video (fixed, doesn't grow) */}
-        <div className="lg:w-[70%] w-full flex flex-col lg:overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200 shrink-0">
-          {/* Video */}
-          <div className="w-full  shrink-0">
+        {/* LEFT: Video & Tabs */}
+        <div className="lg:w-[70%] w-full flex flex-col lg:overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-800 shrink-0">
+          <div className="w-full shrink-0 bg-black">
             <video
               ref={initPlayer}
               src="/lecture.mp4"
@@ -231,17 +321,16 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
             />
           </div>
 
-          {/* Tabs — hidden on mobile to save space */}
-          <div className="hidden lg:flex lg:flex-col bg-white border-t border-gray-200 flex-1 min-h-0">
-            <div className="flex border-b border-gray-200 px-4 shrink-0">
+          <div className="hidden lg:flex lg:flex-col bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex-1 min-h-0">
+            <div className="flex border-b border-gray-200 dark:border-gray-800 px-4 shrink-0">
               {["video", "pdf", "slides"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`px-4 py-2.5 text-sm font-medium capitalize border-b-2 transition ${
                     activeTab === tab
-                      ? "border-blue-600 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
+                      ? "border-[#3E3AF7] text-[#3E3AF7]"
+                      : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                   }`}
                 >
                   {tab === "pdf"
@@ -253,12 +342,12 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
               ))}
             </div>
 
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900">
               {activeTab === "video" && (
                 <div className="p-4 flex items-center gap-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                     <span className="font-medium">Position:</span>
-                    <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-blue-700">
+                    <span className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-[#3E3AF7]">
                       {formattedTime}
                     </span>
                   </div>
@@ -270,10 +359,9 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
                   style={{ height: "300px" }}
                 >
                   <iframe
-                    src="https://drive.google.com/file/d/1rebrqWGGo8WgYT3RqEYc8Ez0sQz3DLxh/preview"
+                    src={lecture.pdfEmbed}
                     className="border-0"
                     style={{
-                      width: "100%",
                       height: "400px",
                       marginLeft: "-80px",
                       marginRight: "-80px",
@@ -290,21 +378,24 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
                     size={18}
                     className="text-orange-500 shrink-0"
                   />
-                  <p className="text-sm text-gray-600">{lecture.ppt}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {lecture.ppt}
+                  </p>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* RIGHT — Chat (takes all remaining space, scrolls internally) */}
-        <div className="lg:w-[30%] w-full flex flex-col overflow-hidden shrink-0">
+        {/* RIGHT: Chat Panel ONLY */}
+        <div className="lg:w-[30%] w-full flex flex-col overflow-hidden shrink-0 bg-white dark:bg-gray-900">
           <ChatPanel
             lectureId={lecture.id || lectureId}
             currentTime={currentTime}
             formattedTime={formattedTime}
             pauseAndGetTime={pauseAndGetTime}
             seekTo={seekTo}
+            onOpenPdf={() => setActiveTab("pdf")}
           />
         </div>
       </div>
@@ -312,7 +403,7 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
   );
 };
 
-// ── Main Page ─────────────────────────────────────────────
+// --- 3. Main Page Component ---
 const LecturePage = () => {
   const { lectureId } = useParams();
   const navigate = useNavigate();
@@ -323,12 +414,14 @@ const LecturePage = () => {
 
   if (!lecture) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="text-center">
-          <p className="text-gray-500 mb-4">Lecture not found.</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
+            Lecture not found.
+          </p>
           <button
             onClick={() => navigate("/")}
-            className="text-blue-600 hover:underline text-sm"
+            className="text-[#3E3AF7] hover:underline text-sm"
           >
             ← Back to Dashboard
           </button>
@@ -340,8 +433,7 @@ const LecturePage = () => {
   const handleStart = async (id) => {
     setLoading(true);
     try {
-      // No ingest needed — go directly to player
-      await new Promise((r) => setTimeout(r, 800)); // small delay for UX
+      await new Promise((r) => setTimeout(r, 800));
       setSessionReady(true);
     } catch (err) {
       alert("Failed to start session. Please try again.");

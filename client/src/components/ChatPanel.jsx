@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Children, Fragment } from "react";
 import ReactMarkdown from "react-markdown";
 import { Send, Bot, User, Loader2, Brain } from "lucide-react";
 import { mockQuery } from "../services/mockApi";
@@ -12,6 +12,34 @@ const QUICK_CHIPS = [
   "Explain the last 2 minutes",
 ];
 
+const BUBBLE_STYLES = {
+  normal: {
+    box: "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-transparent",
+    label: null,
+  },
+  future: {
+    box: "bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700",
+    label: "⏳ Not covered yet",
+  },
+  offtopic: {
+    box: "bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-200 border border-red-300 dark:border-red-700",
+    label: "🚫 Out of syllabus",
+  },
+};
+
+const getKind = (msg) => {
+  const tag = `${msg.type ?? ""} ${msg.intent ?? ""}`.toLowerCase();
+  if (/off[_\s-]?topic|out[_\s-]?of[_\s-]?(scope|syllabus)/.test(tag))
+    return "offtopic";
+  if (/future|not[_\s-]?covered|spoiler/.test(tag)) return "future";
+  if (msg.refused) {
+    return /not (been )?covered|yet|upcoming|later/i.test(msg.content || "")
+      ? "future"
+      : "offtopic";
+  }
+  return "normal";
+};
+
 const parseTimestamp = (str) => {
   const [m, s] = str.split(":").map(Number);
   return m * 60 + s;
@@ -23,6 +51,7 @@ const ChatPanel = ({
   formattedTime,
   pauseAndGetTime,
   seekTo,
+  onOpenPdf,
 }) => {
   const [interviewOpen, setInterviewOpen] = useState(false);
   const [messages, setMessages] = useState([
@@ -52,9 +81,8 @@ const ChatPanel = ({
     setLoading(true);
 
     try {
-      let data;
       if (USE_MOCK) {
-        data = await mockQuery(question, lectureId, lockedTime);
+        const data = await mockQuery(question, lectureId, lockedTime);
         setMessages((prev) => [
           ...prev,
           {
@@ -64,24 +92,25 @@ const ChatPanel = ({
           },
         ]);
       } else {
-        data = await queryAssistant(
+        const data = await queryAssistant(
           question,
           lectureId,
           lockedTime,
           newHistory,
         );
-        setHistory([
-          ...newHistory,
-          { role: "assistant", content: data.answer },
-        ]);
+        const answer =
+          typeof data?.answer === "string" && data.answer.trim()
+            ? data.answer
+            : "⚠️ I couldn't generate an answer. Please try again.";
+        setHistory([...newHistory, { role: "assistant", content: answer }]);
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: data.answer,
-            citations: data.citations || [],
-            intent: data.intent,
-            refused: data.refused,
+            content: answer,
+            citations: Array.isArray(data?.citations) ? data.citations : [],
+            intent: data?.intent,
+            refused: data?.refused,
           },
         ]);
       }
@@ -122,7 +151,7 @@ const ChatPanel = ({
           <button
             key={`ts-${key++}`}
             onClick={() => seekTo(seconds)}
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold hover:bg-blue-200 transition mx-0.5"
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full text-xs font-semibold hover:bg-blue-200 dark:hover:bg-blue-900/60 transition mx-0.5"
           >
             ▶ {timeStr}
           </button>,
@@ -138,8 +167,7 @@ const ChatPanel = ({
               {num}
             </span>
             {citation && (
-              <span className="absolute bottom-7 left-1/2 -translate-x-1/2 z-50 hidden group-hover:flex flex-col w-64 bg-gray-900/95 backdrop-blur-sm text-white text-xs rounded-xl p-3 shadow-2xl ring-1 ring-white/10 animate-tooltip-in">
-                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900/95 rotate-45" />{" "}
+              <span className="absolute bottom-5 left-0 z-50 hidden group-hover:flex flex-col w-64 max-w-[70vw] bg-gray-900 dark:bg-black dark:border dark:border-gray-700 text-white text-xs rounded-lg p-3 shadow-xl">
                 <span className="font-semibold mb-1">
                   {isVideo ? "📍 Video" : "📄 PDF"} —{" "}
                   {citation.label || citation.source}
@@ -162,6 +190,14 @@ const ChatPanel = ({
                     Page {citation.page}
                   </span>
                 )}
+                {!isVideo && onOpenPdf && (
+                  <button
+                    onClick={onOpenPdf}
+                    className="mt-1 text-blue-300 hover:text-blue-100 text-xs underline text-left"
+                  >
+                    📄 Open PDF notes
+                  </button>
+                )}
               </span>
             )}
           </span>,
@@ -173,23 +209,18 @@ const ChatPanel = ({
     return result;
   };
 
-  const flatMapChildren = (children, citations) => {
-    return Array.isArray(children)
-      ? children.flatMap((child, i) =>
-          typeof child === "string"
-            ? processInline(child, citations).map((el, j) =>
-                typeof el === "string" ? el : { ...el, key: `${i}-${j}` },
-              )
-            : [child],
-        )
-      : typeof children === "string"
-        ? processInline(children, citations)
-        : children;
-  };
+  const flatMapChildren = (children, citations) =>
+    Children.map(children, (child, i) =>
+      typeof child === "string" ? (
+        <Fragment key={i}>{processInline(child, citations)}</Fragment>
+      ) : (
+        child
+      ),
+    );
 
   const renderContent = (content, citations = []) => {
     return (
-      <div className="text-sm text-gray-800 leading-relaxed">
+      <div className="text-sm leading-relaxed">
         <ReactMarkdown
           components={{
             p: ({ node, children, ...props }) => (
@@ -210,24 +241,23 @@ const ChatPanel = ({
             ),
           }}
         >
-          {content}
+          {content || ""}
         </ReactMarkdown>
       </div>
     );
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border-l border-gray-200">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800">
       {interviewOpen && (
         <InterviewModal onClose={() => setInterviewOpen(false)} />
       )}
 
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bot size={18} className="text-blue-600" />
-            <span className="font-semibold text-gray-800 text-sm">
+            <span className="font-semibold text-gray-800 dark:text-gray-100 text-sm">
               AI Learning Assistant
             </span>
           </div>
@@ -241,49 +271,35 @@ const ChatPanel = ({
           </button>
         </div>
         <div className="mt-1">
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
             {loading ? "Thinking..." : " "}
           </span>
         </div>
       </div>
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 min-h-0">
-        {messages.map((msg, i) => {
-          const isRefused = msg.intent === "refused" || msg.refused === true;
-          const isFuture =
-            isRefused && msg.content?.toLowerCase().includes("later");
-          const isOffTopic = isRefused && !isFuture;
 
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+        {messages.map((msg, i) => {
+          const style =
+            BUBBLE_STYLES[msg.role === "user" ? "normal" : getKind(msg)];
           return (
             <div
               key={i}
-              className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"} animate-message-in`}
+              className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               {msg.role === "assistant" && (
-                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1">
+                <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0 mt-1">
                   <Bot size={14} className="text-blue-600" />
                 </div>
               )}
               <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm transition-all ${
+                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
                   msg.role === "user"
-                    ? "bg-blue-600 text-white rounded-tr-sm shadow-sm shadow-blue-500/20"
-                    : isFuture
-                      ? "bg-amber-50 text-amber-900 rounded-tl-sm border border-amber-200"
-                      : isOffTopic
-                        ? "bg-gray-100 text-gray-600 rounded-tl-sm border border-gray-300"
-                        : "bg-gray-100 text-gray-800 rounded-tl-sm"
+                    ? "bg-blue-600 text-white rounded-tr-sm"
+                    : `${style.box} rounded-tl-sm`
                 }`}
               >
-                {isFuture && (
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 mb-1.5">
-                    ⏳ Coming up later
-                  </div>
-                )}
-                {isOffTopic && (
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-1.5">
-                    🚫 Out of syllabus
-                  </div>
+                {msg.role === "assistant" && style.label && (
+                  <p className="text-xs font-bold mb-1">{style.label}</p>
                 )}
                 {msg.role === "user" ? (
                   <p>{msg.content}</p>
@@ -302,10 +318,10 @@ const ChatPanel = ({
 
         {loading && (
           <div className="flex gap-2 justify-start">
-            <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0 mt-1">
               <Bot size={14} className="text-blue-600" />
             </div>
-            <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3">
+            <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-3">
               <Loader2 size={16} className="animate-spin text-gray-500" />
             </div>
           </div>
@@ -313,46 +329,39 @@ const ChatPanel = ({
         <div ref={bottomRef} />
       </div>
 
-      {/* Quick Chips (Moved OUTSIDE the scroll area) */}
-      <div className="px-4 py-2 border-t border-gray-100 flex flex-wrap gap-2 bg-white shrink-0">
+      <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-800 flex flex-wrap gap-2">
         {QUICK_CHIPS.map((chip, i) => (
           <button
             key={i}
             onClick={() => sendMessage(chip)}
             disabled={loading}
-            className="text-xs px-3 py-1.5 rounded-full border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-xs px-3 py-1.5 rounded-full border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {chip}
           </button>
         ))}
       </div>
 
-      {/* Input */}
-      <div className="px-4 py-3 border-t border-gray-200 bg-white shrink-0">
-        <div className="relative flex items-end gap-2 bg-gray-50 border border-gray-300 rounded-xl focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all p-1.5">
+      <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800">
+        <div className="flex gap-2 items-end">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask a question about what you've watched..."
-            rows={1}
+            rows={2}
             disabled={loading}
-            className="w-full max-h-32 resize-none bg-transparent border-none px-3 py-2 text-sm focus:outline-none disabled:opacity-50"
-            style={{ minHeight: "44px" }}
-            onInput={(e) => {
-              e.target.style.height = "auto";
-              e.target.style.height = e.target.scrollHeight + "px";
-            }}
+            className="flex-1 resize-none rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
           />
           <button
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="p-2.5 mb-0.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 shadow-sm shadow-blue-500/20"
+            className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
           >
             <Send size={18} />
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-2 text-center">
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
           ↵ Enter to send • Video auto-pauses on send
         </p>
       </div>

@@ -1,69 +1,20 @@
 @import "tailwindcss";
-@import "tailwindcss";
-/* Custom animations */
-@keyframes message-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@import "tw-animate-css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg-main: #f3f4f6;
+  --text-main: #111827;
 }
 
-@keyframes tooltip-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 4px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
+.dark {
+  --bg-main: #030712;
+  --text-main: #f3f4f6;
 }
 
-@keyframes modal-backdrop-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes modal-content-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.animate-message-in {
-  animation: message-in 0.3s ease-out;
-}
-
-.animate-tooltip-in {
-  animation: tooltip-in 0.2s ease-out;
-}
-
-.animate-modal-backdrop-in {
-  animation: modal-backdrop-in 0.2s ease-out;
-}
-
-.animate-modal-content-in {
-  animation: modal-content-in 0.2s ease-out;
-}
-/* Video.js overrides */
-.video-js {
-  width: 100% !important;
-  min-height: 200px;
-}
-
-.vjs-tech {
-  position: relative !important;
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  transition: background-color 0.3s;
 }
