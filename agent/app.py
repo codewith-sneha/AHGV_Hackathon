@@ -20,6 +20,7 @@ load_dotenv()
 log = logging.getLogger("agent")
 
 
+
 def _env(name: str, default: str) -> str:
     return os.getenv(name, default)
 
@@ -45,8 +46,8 @@ class Config:
     collection: str = _env("QDRANT_COLLECTION", "knowledge_base")
     vector_name: Optional[str] = _env("QDRANT_VECTOR_NAME", "") or None
     embed_model: str = _env("EMBED_MODEL", "all-MiniLM-L6-v2")  # match ingestion
-    gemini_model: str = _env("GEMINI_MODEL", "gemini-2.5-flash")
-    gemini_fallbacks: str = _env("GEMINI_FALLBACK_MODELS", "gemini-2.5-flash-lite") 
+    gemini_model: str = _env("GEMINI_MODEL", "gemini-3.8-flash")
+    gemini_fallbacks: str = _env("GEMINI_FALLBACK_MODELS", "gemini-3.1-flash") 
     llm_attempts: int = int(_env("LLM_ATTEMPTS", "3"))                              
     thinking_budget: str = _env("GEMINI_THINKING_BUDGET", "") 
     min_score: float = float(_env("MIN_SCORE", "0.25"))          
@@ -60,6 +61,55 @@ class Config:
     future_candidates: int = int(_env("FUTURE_CANDIDATES", "4"))
 
 
+
+class GroqLLM:
+    """Same call signature as Gemini: (system, prompt, json_mode, max_tokens) -> str"""
+
+    def __init__(self, model: str):
+        self.model = model
+        self._client = None
+        self._lock = threading.Lock()
+
+    def __call__(self, system: str, prompt: str, json_mode: bool = False, max_tokens: int = 700) -> str:
+        with self._lock:
+            if self._client is None:
+                from groq import Groq
+                self._client = Groq()  # reads GROQ_API_KEY
+
+        kwargs = dict(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.2,
+            max_tokens=max_tokens,
+        )
+        if json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
+        resp = self._client.chat.completions.create(**kwargs)
+        return resp.choices[0].message.content or ""
+
+
+class FallbackLLM:
+    """Try the primary LLM; if it is exhausted (LLMUnavailable), try the secondary."""
+
+    def __init__(self, primary: Callable[..., str], secondary: Callable[..., str]):
+        self.primary, self.secondary = primary, secondary
+
+    def __call__(self, system: str, prompt: str, json_mode: bool = False, max_tokens: int = 700) -> str:
+        try:
+            return self.primary(system, prompt, json_mode=json_mode, max_tokens=max_tokens)
+        except LLMUnavailable as e:
+            log.warning("Gemini unavailable, falling back to Groq: %s", e)
+            try:
+                return self.secondary(system, prompt, json_mode=json_mode, max_tokens=max_tokens)
+            except Exception as e2:  # noqa: BLE001
+                log.exception("Groq fallback failed")
+                raise LLMUnavailable(f"Gemini and Groq both failed: {e2}") from e2
+
+
+            
 # Small helpers
 def fmt_ts(sec: float) -> str:
     s = int(sec)
@@ -852,6 +902,8 @@ def get_agent() -> LearningAgent:
     with _agent_lock:
         if _agent is None:
             _agent = LearningAgent()
+            if os.getenv("GROQ_API_KEY"):
+                _agent.llm = FallbackLLM(_agent.llm, GroqLLM(_env("GROQ_MODEL", "llama-3.3-70b-versatile")))
             if os.getenv("CREATE_INDEXES") == "1":
                 create_payload_indexes(_agent.qd, _agent.cfg.collection)
     return _agent
