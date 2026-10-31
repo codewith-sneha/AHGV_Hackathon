@@ -48,7 +48,7 @@ class Config:
     embed_model: str = _env("EMBED_MODEL", "all-MiniLM-L6-v2")  # match ingestion
     gemini_model: str = _env("GEMINI_MODEL", "gemini-3.8-flash")
     gemini_fallbacks: str = _env("GEMINI_FALLBACK_MODELS", "gemini-3.1-flash") 
-    llm_attempts: int = int(_env("LLM_ATTEMPTS", "3"))                              
+    llm_attempts: int = int(_env("LLM_ATTEMPTS", "2"))                              
     thinking_budget: str = _env("GEMINI_THINKING_BUDGET", "") 
     min_score: float = float(_env("MIN_SCORE", "0.25"))          
     context_chars: int = int(_env("CONTEXT_CHARS", "8000"))      
@@ -87,6 +87,9 @@ class GroqLLM:
         )
         if json_mode:
             kwargs["response_format"] = {"type": "json_object"}
+        if "gpt-oss" in self.model:
+            kwargs["reasoning_effort"] = "low"
+            kwargs["max_tokens"] = max_tokens + 1000
         resp = self._client.chat.completions.create(**kwargs)
         return resp.choices[0].message.content or ""
 
@@ -318,7 +321,6 @@ class ChatOut(BaseModel):
     refused: bool = False
     later: bool = False
     citations: list[Citation] = []
-    quiz: Optional[list[dict]] = None
     scope: dict = {}
     timings_ms: dict = {}
 
@@ -334,6 +336,7 @@ _INTENT_RULES: list[tuple[str, re.Pattern]] = [
     ("example", re.compile(r"\b(example|analogy|analogies|real[- ]world)\b", re.I)),
     ("simple", re.compile(r"\b(simpl\w*|eli5|plain (words|english)|easier|layman|beginner)\b", re.I)),
 ]
+
 _DEICTIC = re.compile(r"\b(this|that|here|these|those|it)\b", re.I)
 
 
@@ -402,32 +405,6 @@ class Embedder:
         embeddings = list(self.model.embed([text]))
         return embeddings[0].tolist()
 
-
-# class Gemini:
-#     def __init__(self, model: str, thinking_budget: str = "0"):
-#         self.model = model
-#         self.thinking_budget = thinking_budget
-#         self._client = None
-#         self._lock = threading.Lock()
-
-#     def __call__(self, system: str, prompt: str, json_mode: bool = False, max_tokens: int = 700) -> str:
-#         from google.genai import types
-
-#         with self._lock:
-#             if self._client is None:
-#                 from google import genai
-
-#                 self._client = genai.Client()  
-#         kwargs = dict(system_instruction=system, temperature=0.2, max_output_tokens=max_tokens)
-#         if json_mode:
-#             kwargs["response_mime_type"] = "application/json"
-#         if self.thinking_budget and self.thinking_budget not in ("0", ""):
-#             kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=int(self.thinking_budget))
-#         resp = self._client.models.generate_content(
-#             model=self.model, contents=prompt, config=types.GenerateContentConfig(**kwargs)
-#         )
-#         return resp.text or ""
-    
 class LLMUnavailable(Exception):
     """Raised when Gemini keeps failing with temporary errors (overloaded, rate limited, timeouts)."""
 
@@ -731,9 +708,11 @@ class LearningAgent:
         tm: dict = {}
         scope = Scope(req.video_id, req.pause_time, req.allowed_resources, req.course_id)
         intent = req.action if req.action != "auto" else detect_intent(req.question)
+        if intent == "quiz":
+            return ChatOut(answer="The quiz opens when you finish the video.", intent=intent, scope=self._scope_dict(scope))
         if intent == "locate":
             out = self._locate(req, scope, tm)
-        elif intent in ("summary", "quiz"):
+        elif intent in ("summary"):
             out = self._coverage(req, scope, intent, tm)
         else:
             out = self._answer(req, scope, intent, tm)
@@ -942,3 +921,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(router)
+from quiz import router as quiz_router  # noqa: E402
+app.include_router(quiz_router)
