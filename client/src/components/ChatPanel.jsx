@@ -1,6 +1,14 @@
 import { useState, useRef, useEffect, Children, Fragment } from "react";
 import ReactMarkdown from "react-markdown";
-import { Send, Bot, User, Loader2, Brain } from "lucide-react";
+import {
+  Send,
+  Bot,
+  User,
+  Loader2,
+  Brain,
+  PlayCircle,
+  FileText,
+} from "lucide-react";
 import { mockQuery } from "../services/mockApi";
 import { queryAssistant } from "../services/api";
 import InterviewModal from "./InterviewModal";
@@ -45,13 +53,84 @@ const parseTimestamp = (str) => {
   return m * 60 + s;
 };
 
+const SourceCards = ({ citations, seekTo, onPdfCitation }) => {
+  if (!Array.isArray(citations) || citations.length === 0) return null;
+
+  const videoCitations = citations.filter(
+    (c) => c.kind === "video" || c.kind === "audio",
+  );
+  const slideCitations = citations
+    .filter((c) =>
+      ["ppt", "pptx", "slides", "pdf", "pdf_notes", "text"].includes(c.kind),
+    )
+    .filter(
+      (c, i, arr) =>
+        arr.findIndex((x) => x.page === c.page && x.source === c.source) === i,
+    );
+
+  if (videoCitations.length === 0 && slideCitations.length === 0) return null;
+
+  return (
+    <div className="mt-2 space-y-1.5">
+      {videoCitations.map((c, i) => (
+        <button
+          key={`v-${i}`}
+          onClick={() => seekTo && c.seek_to != null && seekTo(c.seek_to)}
+          className="w-full flex items-start gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 rounded-xl text-left transition group"
+        >
+          <PlayCircle
+            size={15}
+            className="text-blue-500 mt-0.5 flex-shrink-0 group-hover:text-blue-700 dark:group-hover:text-blue-300"
+          />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+              ▶ Video — {c.label}
+            </p>
+            {c.snippet && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+                “{c.snippet}”
+              </p>
+            )}
+          </div>
+        </button>
+      ))}
+
+      {slideCitations.map((c, i) => (
+        <div
+          key={`s-${i}`}
+          onClick={() => onPdfCitation && c.page && onPdfCitation(c.page)}
+          className="flex items-start gap-2 px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/40 transition"
+        >
+          <FileText
+            size={15}
+            className="text-purple-500 mt-0.5 flex-shrink-0"
+          />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-purple-700 dark:text-purple-300">
+              {c.kind === "pdf" || c.kind === "pdf_notes"
+                ? "📄 PDF"
+                : "📑 Slides"}{" "}
+              — {c.label}
+            </p>
+            {c.snippet && (
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-3">
+                “{c.snippet}”
+              </p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const ChatPanel = ({
   lectureId,
   currentTime,
   formattedTime,
   pauseAndGetTime,
   seekTo,
-  onOpenPdf,
+  onPdfCitation,
 }) => {
   const [interviewOpen, setInterviewOpen] = useState(false);
   const [messages, setMessages] = useState([
@@ -158,7 +237,8 @@ const ChatPanel = ({
         );
       } else {
         const num = parseInt(m[2]);
-        const citation = citations[num - 1];
+        const citation =
+          citations.find((c) => c.n === num) || citations[num - 1];
         const isVideo =
           citation && (citation.kind === "video" || citation.kind === "audio");
         result.push(
@@ -190,9 +270,9 @@ const ChatPanel = ({
                     Page {citation.page}
                   </span>
                 )}
-                {!isVideo && onOpenPdf && (
+                {!isVideo && onPdfCitation && (
                   <button
-                    onClick={onOpenPdf}
+                    onClick={() => onPdfCitation(citation.page || 1)}
                     className="mt-1 text-blue-300 hover:text-blue-100 text-xs underline text-left"
                   >
                     📄 Open PDF notes
@@ -291,20 +371,29 @@ const ChatPanel = ({
                   <Bot size={14} className="text-blue-600" />
                 </div>
               )}
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
-                  msg.role === "user"
-                    ? "bg-blue-600 text-white rounded-tr-sm"
-                    : `${style.box} rounded-tl-sm`
-                }`}
-              >
-                {msg.role === "assistant" && style.label && (
-                  <p className="text-xs font-bold mb-1">{style.label}</p>
-                )}
-                {msg.role === "user" ? (
-                  <p>{msg.content}</p>
-                ) : (
-                  renderContent(msg.content, msg.citations || [])
+              <div className="max-w-[85%] min-w-0">
+                <div
+                  className={`rounded-2xl px-4 py-3 text-sm ${
+                    msg.role === "user"
+                      ? "bg-blue-600 text-white rounded-tr-sm"
+                      : `${style.box} rounded-tl-sm`
+                  }`}
+                >
+                  {msg.role === "assistant" && style.label && (
+                    <p className="text-xs font-bold mb-1">{style.label}</p>
+                  )}
+                  {msg.role === "user" ? (
+                    <p>{msg.content}</p>
+                  ) : (
+                    renderContent(msg.content, msg.citations || [])
+                  )}
+                </div>
+                {msg.role === "assistant" && (
+                  <SourceCards
+                    citations={msg.citations}
+                    seekTo={seekTo}
+                    onPdfCitation={onPdfCitation}
+                  />
                 )}
               </div>
               {msg.role === "user" && (

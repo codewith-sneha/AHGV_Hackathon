@@ -36,16 +36,26 @@ def _get_client():
 
 def _llm(system: str, prompt: str, json_mode: bool = False, max_tokens: int = 800) -> str:
     from google.genai import types
-    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    from google.genai.errors import ClientError
+    primary = os.getenv("INTERVIEW_GEMINI_MODEL", "gemini-3.6-flash")
+    fallbacks_str = os.getenv("INTERVIEW_GEMINI_FALLBACK_MODELS", "gemini-3.5-flash-lite")
+    models = [primary] + [m.strip() for m in fallbacks_str.split(",") if m.strip()]
     client = _get_client()
     kwargs = dict(system_instruction=system, temperature=0.4, max_output_tokens=max_tokens)
     if json_mode:
         kwargs["response_mime_type"] = "application/json"
-    resp = client.models.generate_content(
-        model=model, contents=prompt,
-        config=types.GenerateContentConfig(**kwargs)
-    )
-    return resp.text or ""
+    last_err = None
+    for model in models:
+        try:
+            resp = client.models.generate_content(
+                model=model, contents=prompt,
+                config=types.GenerateContentConfig(**kwargs)
+            )
+            return resp.text or ""
+        except ClientError as e:
+            log.warning("Gemini model %s failed: %s", model, e)
+            last_err = e
+    raise last_err
 
 def _parse_json(text: str):
     text = re.sub(r"^```(?:json)?|```$", "", text.strip(), flags=re.M).strip()

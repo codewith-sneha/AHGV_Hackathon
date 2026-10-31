@@ -15,3 +15,14 @@ client/dist/
 .env
 client/.env
 EOF
+
+
+# local qdrant test data
+agent/test_qdrant/
+agent/qdrant_data/
+
+# throwaway test scripts
+agent/seed_test.py
+agent/.py
+agent/list_groq.py
+agent/inspect_qdrant.py

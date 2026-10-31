@@ -16,8 +16,6 @@ import { useVideoTime } from "../hooks/useVideoTime";
 import { fetchMockQuiz } from "../services/mockQuiz";
 
 const END_QUIZ_TRIGGER_RATIO = 0.98;
-// true  = skip the end quiz if every question was already shown
-// false = always show the end quiz (repeats a question if all were seen)
 const SKIP_END_QUIZ_IF_ALL_ASKED = true;
 
 const lectureData = {
@@ -34,7 +32,6 @@ const lectureData = {
   },
 };
 
-// --- 1. Start Learning Card (Lecture Overview) ---
 const LectureOverview = ({
   lecture,
   lectureId,
@@ -135,24 +132,21 @@ const LectureOverview = ({
   </div>
 );
 
-// --- 2. Video Player + Chat Panel ---
 const LecturePlayer = ({ lectureId, lecture, navigate }) => {
   const videoRef = useRef(null);
   const playerRef = useRef(null);
   const { currentTime, formattedTime, seekTo, pauseAndGetTime } =
     useVideoTime(playerRef);
   const [activeTab, setActiveTab] = useState("video");
+  const [activePdfPage, setActivePdfPage] = useState(1);
 
   const [quizOpen, setQuizOpen] = useState(false);
   const [quizData, setQuizData] = useState(null);
   const [quizShown, setQuizShown] = useState(false);
   const [quizLoading, setQuizLoading] = useState(false);
 
-  // indices of questions already shown in this session
   const askedRef = useRef(new Set());
 
-  // Picks the next unseen question.
-  // If all were seen: restart the cycle (allowRepeat) or return null.
   const pickQuestion = (list, allowRepeat) => {
     if (!Array.isArray(list) || list.length === 0) return null;
     let idx = list.findIndex((_, i) => !askedRef.current.has(i));
@@ -180,7 +174,6 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
     };
   };
 
-  // Progress tracking
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -204,7 +197,6 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
     return () => video.removeEventListener("timeupdate", handleTimeUpdate);
   }, [lectureId]);
 
-  // End-of-video quiz trigger
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -233,7 +225,6 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
     return () => video.removeEventListener("timeupdate", handleTimeUpdate);
   }, [quizShown, quizOpen]);
 
-  // Manual quiz button
   const openQuiz = async () => {
     if (quizLoading || quizOpen) return;
     videoRef.current?.pause();
@@ -257,6 +248,11 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
     videoRef.current?.play();
   };
 
+  const handlePdfCitation = (page) => {
+    setActiveTab("pdf");
+    setActivePdfPage(page || 1);
+  };
+
   return (
     <div
       className="flex flex-col bg-gray-50 dark:bg-gray-950 overflow-hidden transition-colors duration-300"
@@ -266,7 +262,6 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
         <QuizModal quiz={quizData} onClose={handleQuizClose} />
       )}
 
-      {/* Top Bar */}
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <button
@@ -307,9 +302,7 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
         </div>
       </header>
 
-      {/* Main Split Screen */}
       <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
-        {/* LEFT: Video & Tabs */}
         <div className="lg:w-[70%] w-full flex flex-col lg:overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-800 shrink-0">
           <div className="w-full shrink-0 bg-black">
             <video
@@ -359,7 +352,7 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
                   style={{ height: "300px" }}
                 >
                   <iframe
-                    src={lecture.pdfEmbed}
+                    src={`${lecture.pdfEmbed}?rm=minimal&pg=PA${activePdfPage}`}
                     className="border-0"
                     style={{
                       height: "400px",
@@ -387,7 +380,6 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
           </div>
         </div>
 
-        {/* RIGHT: Chat Panel ONLY */}
         <div className="lg:w-[30%] w-full flex flex-col overflow-hidden shrink-0 bg-white dark:bg-gray-900">
           <ChatPanel
             lectureId={lecture.id || lectureId}
@@ -395,7 +387,7 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
             formattedTime={formattedTime}
             pauseAndGetTime={pauseAndGetTime}
             seekTo={seekTo}
-            onOpenPdf={() => setActiveTab("pdf")}
+            onPdfCitation={handlePdfCitation}
           />
         </div>
       </div>
@@ -403,7 +395,6 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
   );
 };
 
-// --- 3. Main Page Component ---
 const LecturePage = () => {
   const { lectureId } = useParams();
   const navigate = useNavigate();

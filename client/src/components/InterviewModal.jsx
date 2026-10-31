@@ -1,17 +1,118 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   X,
   Loader2,
   Send,
+  Mic,
+  MicOff,
   Brain,
   MessageSquare,
   ChevronRight,
+  Volume2,
 } from "lucide-react";
 import {
   interviewStart,
   interviewRespond,
   interviewFinish,
 } from "../services/api";
+
+const DEEPGRAM_API_KEY = import.meta.env.VITE_DEEPGRAM_API_KEY || "";
+
+function useDeepgramSTT(onTranscript) {
+  const [recording, setRecording] = useState(false);
+  const [error, setError] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const socketRef = useRef(null);
+  const streamRef = useRef(null);
+
+  const stopRecording = useCallback(() => {
+    try {
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== "inactive"
+      ) {
+        mediaRecorderRef.current.stop();
+      }
+    } catch {}
+    try {
+      socketRef.current?.close();
+    } catch {}
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    mediaRecorderRef.current = null;
+    socketRef.current = null;
+    streamRef.current = null;
+    setRecording(false);
+  }, []);
+
+  const startRecording = useCallback(async () => {
+    setError(null);
+    if (!DEEPGRAM_API_KEY) {
+      setError("Voice input is not configured. Please type your answer.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const socket = new WebSocket(
+        "wss://api.deepgram.com/v1/listen?model=nova-2&language=en&smart_format=true",
+        ["token", DEEPGRAM_API_KEY],
+      );
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: "audio/webm",
+        });
+        mediaRecorderRef.current = mediaRecorder;
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+            socket.send(e.data);
+          }
+        };
+        mediaRecorder.start(250);
+        setRecording(true);
+      };
+
+      socket.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          const transcript = data?.channel?.alternatives?.[0]?.transcript;
+          if (transcript && data.is_final) {
+            onTranscript(transcript);
+          }
+        } catch {}
+      };
+
+      socket.onerror = () =>
+        setError("Microphone error. Check your Deepgram API key.");
+      socket.onclose = () => {
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        setRecording(false);
+      };
+    } catch (err) {
+      setError("Microphone access denied.");
+      setRecording(false);
+    }
+  }, [onTranscript]);
+
+  return { recording, error, startRecording, stopRecording };
+}
+
+function speak(text) {
+  if (typeof window === "undefined" || !window.speechSynthesis || !text) return;
+  if (text.startsWith("⚠️")) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 0.92;
+  utterance.pitch = 1;
+  window.speechSynthesis.speak(utterance);
+}
+
+function stopSpeaking() {
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+}
 
 const ScoreBar = ({ label, value = 0 }) => (
   <div className="mb-3">
@@ -286,12 +387,36 @@ const InterviewChat = ({ config, sessionId, firstQuestion, onFinish }) => {
   const [questionsAnswered, setQuestionsAnswered] = useState(0);
   const bottomRef = useRef(null);
 
+  const handleTranscript = useCallback((text) => {
+    setAnswer((prev) => (prev ? prev + " " + text : text));
+  }, []);
+
+  const {
+    recording,
+    error: micError,
+    startRecording,
+    stopRecording,
+  } = useDeepgramSTT(handleTranscript);
+
+  useEffect(() => {
+    if (currentQuestion) speak(currentQuestion);
+  }, [currentQuestion]);
+
+  useEffect(() => {
+    return () => {
+      stopRecording();
+      stopSpeaking();
+    };
+  }, [stopRecording]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [history, currentQuestion]);
 
   const submitAnswer = async () => {
     if (!answer.trim() || loading) return;
+    if (recording) stopRecording();
+    stopSpeaking();
     const myAnswer = answer.trim();
     const thisQuestion = currentQuestion;
     setAnswer("");
@@ -350,6 +475,8 @@ const InterviewChat = ({ config, sessionId, firstQuestion, onFinish }) => {
 
   const endEarly = async () => {
     if (history.length === 0) return;
+    if (recording) stopRecording();
+    stopSpeaking();
     setLoading(true);
     try {
       const result = await interviewFinish({ history, config });
@@ -431,16 +558,37 @@ const InterviewChat = ({ config, sessionId, firstQuestion, onFinish }) => {
       </div>
 
       <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800 shrink-0">
+        {micError && <p className="text-xs text-red-500 mb-1">{micError}</p>}
         <div className="flex gap-2 items-end">
           <textarea
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your answer..."
+            placeholder={
+              recording
+                ? "🎙️ Listening… speak your answer"
+                : "Type your answer or use mic…"
+            }
             rows={3}
             disabled={loading}
-            className="flex-1 resize-none rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            className={`flex-1 resize-none rounded-xl border px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 ${
+              recording
+                ? "border-red-400 bg-red-50 dark:bg-red-900/20"
+                : "border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+            }`}
           />
+          <button
+            onClick={recording ? stopRecording : startRecording}
+            disabled={loading}
+            title={recording ? "Stop recording" : "Speak your answer"}
+            className={`p-2.5 rounded-xl transition disabled:opacity-50 shrink-0 ${
+              recording
+                ? "bg-red-500 text-white hover:bg-red-600 animate-pulse"
+                : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+            }`}
+          >
+            {recording ? <MicOff size={16} /> : <Mic size={16} />}
+          </button>
           <button
             onClick={submitAnswer}
             disabled={loading || !answer.trim()}
@@ -449,9 +597,18 @@ const InterviewChat = ({ config, sessionId, firstQuestion, onFinish }) => {
             <Send size={16} />
           </button>
         </div>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-          ↵ Enter to submit answer
-        </p>
+        <div className="flex items-center justify-between mt-1">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            ↵ Enter to submit · 🎙️ mic to speak
+          </p>
+          <button
+            onClick={() => speak(currentQuestion)}
+            className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition"
+            title="Replay question"
+          >
+            <Volume2 size={11} /> replay
+          </button>
+        </div>
       </div>
     </div>
   );
