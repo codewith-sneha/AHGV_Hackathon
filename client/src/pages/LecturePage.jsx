@@ -103,7 +103,7 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
   const playerRef = useRef(null)
   const { currentTime, formattedTime, seekTo, pauseAndGetTime } = useVideoTime(playerRef)
   const [activeTab, setActiveTab] = useState('video')
-
+const [activePdfPage, setActivePdfPage] = useState(1) 
   // Wire up playerRef to native video element
   const initPlayer = (el) => {
     if (!el) return
@@ -196,7 +196,7 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
   {activeTab === 'pdf' && (
   <div className="mx-0 overflow-hidden" style={{ height: '300px' }}>
     <iframe
-      src="https://drive.google.com/file/d/1rebrqWGGo8WgYT3RqEYc8Ez0sQz3DLxh/preview"
+      src={`https://drive.google.com/file/d/1rebrqWGGo8WgYT3RqEYc8Ez0sQz3DLxh/preview?rm=minimal&pg=PA${activePdfPage}`}
       className="border-0"
       style={{ 
         width: '100%', 
@@ -228,6 +228,10 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
             formattedTime={formattedTime}
             pauseAndGetTime={pauseAndGetTime}
             seekTo={seekTo}
+             onPdfCitation={(page) => {
+    setActiveTab('pdf')
+    setActivePdfPage(page)
+  }}
           />
         </div>
 
