@@ -14,7 +14,10 @@ from typing import Literal, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-import app as core  
+try:
+    from . import app as core      
+except ImportError:
+    import app as core 
 
 log = logging.getLogger("agent")
 router = APIRouter(prefix="/quiz", tags=["quiz"])

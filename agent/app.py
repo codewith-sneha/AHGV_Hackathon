@@ -956,5 +956,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(router)
-from quiz import router as quiz_router  # noqa: E402
+try:
+    from .quiz import router as quiz_router   
+except ImportError:
+    from quiz import router as quiz_router   
 app.include_router(quiz_router)
