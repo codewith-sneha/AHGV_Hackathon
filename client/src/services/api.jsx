@@ -11,10 +11,14 @@ export const queryAssistant = async (question, lectureId, timestamp, history = [
       pause_time: timestamp,
       action: 'auto',
       history,
+      allowed_resources: ['Photosynthesis — Study Notes.pdf'], 
     }),
   })
   if (!res.ok) throw new Error('Query failed')
-  return res.json()
+      const data = await res.json()
+
+      console.log('Backend response:', data)
+ return data 
 }
 
 export const ingestLecture = async () => {

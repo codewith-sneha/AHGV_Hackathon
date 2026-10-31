@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { Send, Bot, User, Loader2, Brain } from 'lucide-react'
+import { Send, Bot, User, Loader2, Brain, PlayCircle, FileText } from 'lucide-react'
 import { mockQuery } from '../services/mockApi'
 import { queryAssistant } from '../services/api'
 import InterviewModal from './InterviewModal'
@@ -17,7 +17,59 @@ const parseTimestamp = (str) => {
   return m * 60 + s
 }
 
-const ChatPanel = ({ lectureId, currentTime, formattedTime, pauseAndGetTime, seekTo }) => {
+// ── Source Cards shown below each AI answer ───────────────────────────────────
+const SourceCards = ({ citations, seekTo ,onPdfCitation}) => {
+  if (!citations || citations.length === 0) return null
+
+  const videoCitations = citations.filter(c => c.kind === 'video' || c.kind === 'audio')
+const slideCitations = citations
+  .filter(c => ['ppt', 'pptx', 'slides', 'pdf', 'pdf_notes', 'text'].includes(c.kind))
+  .filter((c, i, arr) => arr.findIndex(x => x.page === c.page && x.source === c.source) === i)
+  
+  if (videoCitations.length === 0 && slideCitations.length === 0) return null
+
+  return (
+    <div className="mt-2 space-y-1.5">
+      {/* Video timestamps */}
+      {videoCitations.map((c, i) => (
+        <button
+          key={`v-${i}`}
+          onClick={() => seekTo && seekTo(c.seek_to)}
+          className="w-full flex items-start gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl text-left transition group"
+        >
+          <PlayCircle size={15} className="text-blue-500 mt-0.5 flex-shrink-0 group-hover:text-blue-700" />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-blue-700">▶ Video — {c.label}</p>
+            {c.snippet && (
+              <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">"{c.snippet}"</p>
+            )}
+          </div>
+        </button>
+      ))}
+
+      {/* Slide transcriptions */}
+      {slideCitations.map((c, i) => (
+        <div
+  key={`s-${i}`}
+  onClick={() => onPdfCitation && c.page && onPdfCitation(c.page)}
+  className="flex items-start gap-2 px-3 py-2 bg-purple-50 border border-purple-200 rounded-xl cursor-pointer hover:bg-purple-100 transition"
+>
+          <FileText size={15} className="text-purple-500 mt-0.5 flex-shrink-0" />
+          <div className="min-w-0">
+        <p className="text-xs font-semibold text-purple-700">
+  {c.kind === 'pdf' || c.kind === 'pdf_notes' ? '📄 PDF' : '📑 Slides'} — {c.label}
+</p>
+            {c.snippet && (
+              <p className="text-xs text-gray-600 mt-0.5 line-clamp-3">"{c.snippet}"</p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const ChatPanel = ({ lectureId, currentTime, formattedTime, pauseAndGetTime, seekTo, onPdfCitation}) => {
   const [interviewOpen, setInterviewOpen] = useState(false)
   const [messages, setMessages] = useState([
     {
@@ -56,6 +108,7 @@ const ChatPanel = ({ lectureId, currentTime, formattedTime, pauseAndGetTime, see
         }])
       } else {
         data = await queryAssistant(question, lectureId, lockedTime, newHistory)
+        console.log('API response:', data) 
         setHistory([...newHistory, { role: 'assistant', content: data.answer }])
         setMessages(prev => [...prev, {
           role: 'assistant',
@@ -101,7 +154,7 @@ const ChatPanel = ({ lectureId, currentTime, formattedTime, pauseAndGetTime, see
         )
       } else {
         const num = parseInt(m[2])
-        const citation = citations[num - 1]
+         const citation = citations.find(c => c.n === num)
         const isVideo = citation && (citation.kind === 'video' || citation.kind === 'audio')
         result.push(
           <span key={`cit-${key++}`} className="relative group inline-block">
@@ -202,15 +255,20 @@ const ChatPanel = ({ lectureId, currentTime, formattedTime, pauseAndGetTime, see
                 <Bot size={14} className="text-blue-600" />
               </div>
             )}
-            <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
-              msg.role === 'user'
-                ? 'bg-blue-600 text-white rounded-tr-sm'
-                : 'bg-gray-100 text-gray-800 rounded-tl-sm'
-            }`}>
-              {msg.role === 'user'
-                ? <p>{msg.content}</p>
-                : renderContent(msg.content, msg.citations || [])
-              }
+            <div className="max-w-[85%]">
+              <div className={`rounded-2xl px-4 py-3 text-sm ${
+                msg.role === 'user'
+                  ? 'bg-blue-600 text-white rounded-tr-sm'
+                  : 'bg-gray-100 text-gray-800 rounded-tl-sm'
+              }`}>
+                {msg.role === 'user'
+                  ? <p>{msg.content}</p>
+                  : renderContent(msg.content, msg.citations || [])
+                }
+              </div>
+              {msg.role === 'assistant' && (
+                <SourceCards citations={msg.citations} seekTo={seekTo} onPdfCitation={onPdfCitation}  />
+              )}
             </div>
             {msg.role === 'user' && (
               <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 mt-1">
