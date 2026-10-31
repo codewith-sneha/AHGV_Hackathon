@@ -302,9 +302,6 @@ const InterviewChat = ({ config, sessionId, firstQuestion, onFinish }) => {
     if (currentQuestion) speak(currentQuestion)
   }, [currentQuestion])
 
-  useEffect(() => {
-    speak(firstQuestion)
-  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
