@@ -1,8 +1,77 @@
-import { useState, useRef, useEffect } from 'react'
-import { X, Loader2, Send, Brain, MessageSquare, ChevronRight } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { X, Loader2, Send, Mic, MicOff, Brain, MessageSquare, CheckCircle2, ChevronRight, Volume2 } from 'lucide-react'
 import { interviewStart, interviewRespond, interviewFinish } from '../services/api'
 
-// ── Score bar ─────────────────────────────────────────────────────────────────
+// ── Deepgram STT hook ─────────────────────────────────────────────────────────
+const DEEPGRAM_API_KEY = import.meta.env.VITE_DEEPGRAM_API_KEY || ''
+
+function useDeepgramSTT(onTranscript) {
+  const [recording, setRecording] = useState(false)
+  const [error, setError] = useState(null)
+  const mediaRecorderRef = useRef(null)
+  const socketRef = useRef(null)
+  const chunksRef = useRef([])
+
+  const startRecording = useCallback(async () => {
+    setError(null)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const socket = new WebSocket(
+        'wss://api.deepgram.com/v1/listen?model=nova-2&language=en&smart_format=true',
+        ['token', DEEPGRAM_API_KEY]
+      )
+      socketRef.current = socket
+
+      socket.onopen = () => {
+        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+        mediaRecorderRef.current = mediaRecorder
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+            socket.send(e.data)
+          }
+        }
+        mediaRecorder.start(250)
+        setRecording(true)
+      }
+
+      socket.onmessage = (e) => {
+        const data = JSON.parse(e.data)
+        const transcript = data?.channel?.alternatives?.[0]?.transcript
+        if (transcript && data.is_final) {
+          onTranscript(transcript)
+        }
+      }
+
+      socket.onerror = () => setError('Microphone error. Check your Deepgram API key.')
+      socket.onclose = () => {
+        stream.getTracks().forEach(t => t.stop())
+        setRecording(false)
+      }
+    } catch (err) {
+      setError('Microphone access denied.')
+      setRecording(false)
+    }
+  }, [onTranscript])
+
+  const stopRecording = useCallback(() => {
+    mediaRecorderRef.current?.stop()
+    socketRef.current?.close()
+    setRecording(false)
+  }, [])
+
+  return { recording, error, startRecording, stopRecording }
+}
+
+// ── TTS helper ────────────────────────────────────────────────────────────────
+function speak(text) {
+  window.speechSynthesis.cancel()
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.rate = 0.92
+  utterance.pitch = 1
+  window.speechSynthesis.speak(utterance)
+}
+
+// ── Scorecard display ─────────────────────────────────────────────────────────
 const ScoreBar = ({ label, value }) => (
   <div className="mb-3">
     <div className="flex justify-between text-xs mb-1">
@@ -49,7 +118,8 @@ const Scorecard = ({ scorecard, onClose, onRetry }) => (
       <ul className="space-y-1">
         {scorecard.strengths.map((s, i) => (
           <li key={i} className="text-sm text-gray-700 flex gap-2">
-            <span className="text-green-500 mt-0.5 shrink-0">•</span><span>{s}</span>
+            <span className="text-green-500 mt-0.5 shrink-0">•</span>
+            <span>{s}</span>
           </li>
         ))}
       </ul>
@@ -60,7 +130,8 @@ const Scorecard = ({ scorecard, onClose, onRetry }) => (
       <ul className="space-y-1">
         {scorecard.improvements.map((s, i) => (
           <li key={i} className="text-sm text-gray-700 flex gap-2">
-            <span className="text-orange-400 mt-0.5 shrink-0">•</span><span>{s}</span>
+            <span className="text-orange-400 mt-0.5 shrink-0">•</span>
+            <span>{s}</span>
           </li>
         ))}
       </ul>
@@ -71,19 +142,24 @@ const Scorecard = ({ scorecard, onClose, onRetry }) => (
       <ul className="space-y-1">
         {scorecard.recommendations.map((s, i) => (
           <li key={i} className="text-sm text-gray-700 flex gap-2">
-            <span className="text-blue-400 mt-0.5 shrink-0">→</span><span>{s}</span>
+            <span className="text-blue-400 mt-0.5 shrink-0">→</span>
+            <span>{s}</span>
           </li>
         ))}
       </ul>
     </div>
 
-  
-
     <div className="flex gap-3 mt-auto pt-2">
-      <button onClick={onRetry} className="flex-1 py-2.5 border border-blue-600 text-blue-600 rounded-xl text-sm font-semibold hover:bg-blue-50 transition">
+      <button
+        onClick={onRetry}
+        className="flex-1 py-2.5 border border-blue-600 text-blue-600 rounded-xl text-sm font-semibold hover:bg-blue-50 transition"
+      >
         New Interview
       </button>
-      <button onClick={onClose} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
+      <button
+        onClick={onClose}
+        className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition"
+      >
         Close
       </button>
     </div>
@@ -99,6 +175,7 @@ const SetupScreen = ({ onStart, loading }) => {
     num_questions: 5,
     candidate_name: '',
   })
+
   const set = (k, v) => setConfig(c => ({ ...c, [k]: v }))
 
   return (
@@ -108,31 +185,48 @@ const SetupScreen = ({ onStart, loading }) => {
           <Brain size={18} className="text-blue-600" />
           <h3 className="text-base font-bold text-gray-900">AI Mock Interview</h3>
         </div>
-        <p className="text-xs text-gray-500">Practice with an AI that asks dynamic follow-up questions based on your answers.</p>
+        <p className="text-xs text-gray-500">
+          Practice with an AI that asks dynamic follow-up questions based on your answers.
+        </p>
       </div>
 
       <div className="space-y-4 flex-1">
         <div>
           <label className="text-xs font-semibold text-gray-600 block mb-1">Your Name (optional)</label>
-          <input type="text" placeholder="e.g. Sneha" value={config.candidate_name}
+          <input
+            type="text"
+            placeholder="e.g. Sneha"
+            value={config.candidate_name}
             onChange={e => set('candidate_name', e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
 
         <div>
           <label className="text-xs font-semibold text-gray-600 block mb-1">Topic / Course</label>
-          <input type="text" value={config.course} onChange={e => set('course', e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input
+            type="text"
+            value={config.course}
+            onChange={e => set('course', e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
 
         <div>
           <label className="text-xs font-semibold text-gray-600 block mb-2">Skill Level</label>
           <div className="flex gap-2">
             {['beginner', 'intermediate', 'advanced'].map(lvl => (
-              <button key={lvl} onClick={() => set('skill_level', lvl)}
+              <button
+                key={lvl}
+                onClick={() => set('skill_level', lvl)}
                 className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition capitalize ${
-                  config.skill_level === lvl ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-                }`}>{lvl}</button>
+                  config.skill_level === lvl
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                }`}
+              >
+                {lvl}
+              </button>
             ))}
           </div>
         </div>
@@ -141,10 +235,17 @@ const SetupScreen = ({ onStart, loading }) => {
           <label className="text-xs font-semibold text-gray-600 block mb-2">Interview Type</label>
           <div className="flex gap-2">
             {['technical', 'conceptual', 'mixed'].map(t => (
-              <button key={t} onClick={() => set('interview_type', t)}
+              <button
+                key={t}
+                onClick={() => set('interview_type', t)}
                 className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition capitalize ${
-                  config.interview_type === t ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-                }`}>{t}</button>
+                  config.interview_type === t
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                }`}
+              >
+                {t}
+              </button>
             ))}
           </div>
         </div>
@@ -153,18 +254,30 @@ const SetupScreen = ({ onStart, loading }) => {
           <label className="text-xs font-semibold text-gray-600 block mb-2">
             Number of Questions: <span className="text-blue-600 font-bold">{config.num_questions}</span>
           </label>
-          <input type="range" min={3} max={10} value={config.num_questions}
+          <input
+            type="range"
+            min={3}
+            max={10}
+            value={config.num_questions}
             onChange={e => set('num_questions', parseInt(e.target.value))}
-            className="w-full accent-blue-600" />
+            className="w-full accent-blue-600"
+          />
           <div className="flex justify-between text-xs text-gray-400 mt-0.5">
-            <span>3 (quick)</span><span>10 (thorough)</span>
+            <span>3 (quick)</span>
+            <span>10 (thorough)</span>
           </div>
         </div>
       </div>
 
-      <button onClick={() => onStart(config)} disabled={loading}
-        className="mt-5 w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition disabled:opacity-60">
-        {loading ? <><Loader2 size={16} className="animate-spin" /> Starting…</> : <><ChevronRight size={16} /> Start Interview</>}
+      <button
+        onClick={() => onStart(config)}
+        disabled={loading}
+        className="mt-5 w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition disabled:opacity-60"
+      >
+        {loading
+          ? <><Loader2 size={16} className="animate-spin" /> Starting…</>
+          : <><ChevronRight size={16} /> Start Interview</>
+        }
       </button>
     </div>
   )
@@ -178,6 +291,20 @@ const InterviewChat = ({ config, sessionId, firstQuestion, onFinish }) => {
   const [loading, setLoading] = useState(false)
   const [questionsAnswered, setQuestionsAnswered] = useState(0)
   const bottomRef = useRef(null)
+
+  const handleTranscript = useCallback((text) => {
+    setAnswer(prev => prev ? prev + ' ' + text : text)
+  }, [])
+
+  const { recording, error: micError, startRecording, stopRecording } = useDeepgramSTT(handleTranscript)
+
+  useEffect(() => {
+    if (currentQuestion) speak(currentQuestion)
+  }, [currentQuestion])
+
+  useEffect(() => {
+    speak(firstQuestion)
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -224,7 +351,10 @@ const InterviewChat = ({ config, sessionId, firstQuestion, onFinish }) => {
   }
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitAnswer() }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      submitAnswer()
+    }
   }
 
   const endEarly = async () => {
@@ -233,7 +363,9 @@ const InterviewChat = ({ config, sessionId, firstQuestion, onFinish }) => {
     try {
       const result = await interviewFinish({ history, config })
       onFinish(result.scorecard)
-    } catch { setLoading(false) }
+    } catch {
+      setLoading(false)
+    }
   }
 
   return (
@@ -242,14 +374,20 @@ const InterviewChat = ({ config, sessionId, firstQuestion, onFinish }) => {
         <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
           <span>Question {Math.min(questionsAnswered + 1, config.num_questions)} of {config.num_questions}</span>
           {history.length > 0 && (
-            <button onClick={endEarly} disabled={loading} className="text-gray-400 hover:text-gray-600 text-xs underline">
+            <button
+              onClick={endEarly}
+              disabled={loading}
+              className="text-gray-400 hover:text-gray-600 text-xs underline"
+            >
               End & Score
             </button>
           )}
         </div>
         <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-full bg-blue-500 rounded-full transition-all duration-500"
-            style={{ width: `${(questionsAnswered / config.num_questions) * 100}%` }} />
+          <div
+            className="h-full bg-blue-500 rounded-full transition-all duration-500"
+            style={{ width: `${(questionsAnswered / config.num_questions) * 100}%` }}
+          />
         </div>
       </div>
 
@@ -260,10 +398,14 @@ const InterviewChat = ({ config, sessionId, firstQuestion, onFinish }) => {
               <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
                 <Brain size={13} className="text-blue-600" />
               </div>
-              <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-gray-800 max-w-[85%]">{turn.question}</div>
+              <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-gray-800 max-w-[85%]">
+                {turn.question}
+              </div>
             </div>
             <div className="flex gap-2 justify-end">
-              <div className="bg-blue-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm max-w-[85%]">{turn.answer}</div>
+              <div className="bg-blue-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm max-w-[85%]">
+                {turn.answer}
+              </div>
             </div>
           </div>
         ))}
@@ -273,7 +415,9 @@ const InterviewChat = ({ config, sessionId, firstQuestion, onFinish }) => {
             <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
               <Brain size={13} className="text-blue-600" />
             </div>
-            <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-gray-800 max-w-[85%]">{currentQuestion}</div>
+            <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-gray-800 max-w-[85%]">
+              {currentQuestion}
+            </div>
           </div>
         )}
 
@@ -291,16 +435,51 @@ const InterviewChat = ({ config, sessionId, firstQuestion, onFinish }) => {
       </div>
 
       <div className="px-4 py-3 border-t border-gray-200 shrink-0">
+        {micError && (
+          <p className="text-xs text-red-500 mb-1">{micError}</p>
+        )}
         <div className="flex gap-2 items-end">
-          <textarea value={answer} onChange={e => setAnswer(e.target.value)} onKeyDown={handleKeyDown}
-            placeholder="Type your answer..." rows={3} disabled={loading}
-            className="flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50" />
-          <button onClick={submitAnswer} disabled={loading || !answer.trim()}
-            className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition disabled:opacity-50 shrink-0">
+          <textarea
+            value={answer}
+            onChange={e => setAnswer(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={recording ? '🎙️ Listening… speak your answer' : 'Type your answer or use mic…'}
+            rows={3}
+            disabled={loading}
+            className={`flex-1 resize-none rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 ${
+              recording ? 'border-red-400 bg-red-50' : 'border-gray-300'
+            }`}
+          />
+          <button
+            onClick={recording ? stopRecording : startRecording}
+            disabled={loading}
+            title={recording ? 'Stop recording' : 'Speak your answer'}
+            className={`p-2.5 rounded-xl transition disabled:opacity-50 shrink-0 ${
+              recording
+                ? 'bg-red-500 text-white hover:bg-red-600 animate-pulse'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {recording ? <MicOff size={16} /> : <Mic size={16} />}
+          </button>
+          <button
+            onClick={submitAnswer}
+            disabled={loading || !answer.trim()}
+            className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition disabled:opacity-50 shrink-0"
+          >
             <Send size={16} />
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-1">↵ Enter to submit answer</p>
+        <div className="flex items-center justify-between mt-1">
+          <p className="text-xs text-gray-400">↵ Enter to submit · 🎙️ mic to speak</p>
+          <button
+            onClick={() => speak(currentQuestion)}
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-500 transition"
+            title="Replay question"
+          >
+            <Volume2 size={11} /> replay
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -330,16 +509,24 @@ const InterviewModal = ({ onClose }) => {
     }
   }
 
-  const handleFinish = (sc) => { setScorecard(sc); setPhase('scorecard') }
+  const handleFinish = (sc) => {
+    setScorecard(sc)
+    setPhase('scorecard')
+  }
 
   const handleRetry = () => {
-    setPhase('setup'); setConfig(null); setSessionId(null)
-    setFirstQuestion(''); setScorecard(null)
+    setPhase('setup')
+    setConfig(null)
+    setSessionId(null)
+    setFirstQuestion('')
+    setScorecard(null)
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col" style={{ height: 'min(90vh, 680px)' }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col"
+           style={{ height: 'min(90vh, 680px)' }}>
+
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -354,15 +541,29 @@ const InterviewModal = ({ onClose }) => {
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
+          >
             <X size={16} className="text-gray-500" />
           </button>
         </div>
 
         <div className="flex-1 overflow-hidden">
-          {phase === 'setup' && <SetupScreen onStart={handleStart} loading={loading} />}
-          {phase === 'interview' && <InterviewChat config={config} sessionId={sessionId} firstQuestion={firstQuestion} onFinish={handleFinish} />}
-          {phase === 'scorecard' && <Scorecard scorecard={scorecard} onClose={onClose} onRetry={handleRetry} />}
+          {phase === 'setup' && (
+            <SetupScreen onStart={handleStart} loading={loading} />
+          )}
+          {phase === 'interview' && (
+            <InterviewChat
+              config={config}
+              sessionId={sessionId}
+              firstQuestion={firstQuestion}
+              onFinish={handleFinish}
+            />
+          )}
+          {phase === 'scorecard' && (
+            <Scorecard scorecard={scorecard} onClose={onClose} onRetry={handleRetry} />
+          )}
         </div>
       </div>
     </div>
