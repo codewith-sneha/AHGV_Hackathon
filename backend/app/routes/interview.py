@@ -36,7 +36,7 @@ def _get_client():
 
 def _llm(system: str, prompt: str, json_mode: bool = False, max_tokens: int = 800) -> str:
     from google.genai import types
-    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
     client = _get_client()
     kwargs = dict(system_instruction=system, temperature=0.4, max_output_tokens=max_tokens)
     if json_mode:
