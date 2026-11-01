@@ -1,57 +1,64 @@
 // const API_BASE = 'https://ahgv-learning-backend.onrender.com'
-const API_BASE = 'http://localhost:8000'
+// const API_BASE = 'http://localhost:8000'
+const API_BASE = "https://ahgv-learning-backend.onrender.com";
+// const API_BASE = 'http://localhost:8000'
 
-export const queryAssistant = async (question, lectureId, timestamp, history = []) => {
+export const queryAssistant = async (
+  question,
+  lectureId,
+  timestamp,
+  history = [],
+) => {
   const res = await fetch(`${API_BASE}/api/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       question,
       video_id: lectureId,
       pause_time: timestamp,
-      action: 'auto',
+      action: "auto",
       history,
-      allowed_resources: ['Photosynthesis — Study Notes.pdf'], 
+      allowed_resources: ["Photosynthesis — Study Notes.pdf"],
     }),
-  })
-  if (!res.ok) throw new Error('Query failed')
-      const data = await res.json()
+  });
+  if (!res.ok) throw new Error("Query failed");
+  const data = await res.json();
 
-      console.log('Backend response:', data)
- return data 
-}
+  console.log("Backend response:", data);
+  return data;
+};
 
 export const ingestLecture = async () => {
-  return { success: true }
-}
+  return { success: true };
+};
 
 // ── Interview API ─────────────────────────────────────────────────────────────
 export const interviewStart = async (config) => {
   const res = await fetch(`${API_BASE}/api/interview/start`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(config),
-  })
-  if (!res.ok) throw new Error('Interview start failed')
-  return res.json()
-}
+  });
+  if (!res.ok) throw new Error("Interview start failed");
+  return res.json();
+};
 
 export const interviewRespond = async (payload) => {
   const res = await fetch(`${API_BASE}/api/interview/respond`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-  })
-  if (!res.ok) throw new Error('Interview respond failed')
-  return res.json()
-}
+  });
+  if (!res.ok) throw new Error("Interview respond failed");
+  return res.json();
+};
 
 export const interviewFinish = async (payload) => {
   const res = await fetch(`${API_BASE}/api/interview/finish`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-  })
-  if (!res.ok) throw new Error('Interview finish failed')
-  return res.json()
-}
+  });
+  if (!res.ok) throw new Error("Interview finish failed");
+  return res.json();
+};

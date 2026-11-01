@@ -1,12 +1,20 @@
 @import "tailwindcss";
-@import "tailwindcss";
+@import "tw-animate-css";
 
-/* Video.js overrides */
-.video-js {
-  width: 100% !important;
-  min-height: 200px;
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg-main: #f3f4f6;
+  --text-main: #111827;
 }
 
-.vjs-tech {
-  position: relative !important;
+.dark {
+  --bg-main: #030712;
+  --text-main: #f3f4f6;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  transition: background-color 0.3s;
 }
