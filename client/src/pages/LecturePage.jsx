@@ -27,6 +27,7 @@ const lectureData = {
     pdf: "Lecture1_Notes.pdf",
     pdfEmbed:
       "https://drive.google.com/file/d/1rebrqWGGo8WgYT3RqEYc8Ez0sQz3DLxh/preview",
+    pdfLocal: null,
     ppt: "Lecture1_Slides.pptx",
     duration: "13 min",
   },
@@ -245,12 +246,33 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
 
   const handleQuizClose = () => {
     setQuizOpen(false);
-    videoRef.current?.play();
+    if (activeTab === "video") videoRef.current?.play();
+  };
+
+  const switchTab = (tab) => {
+    if (tab !== "video") videoRef.current?.pause();
+    setActiveTab(tab);
   };
 
   const handlePdfCitation = (page) => {
-    setActiveTab("pdf");
+    videoRef.current?.pause();
     setActivePdfPage(page || 1);
+    setActiveTab("pdf");
+  };
+
+  const handleSeek = (seconds) => {
+    setActiveTab("video");
+    seekTo(seconds);
+  };
+
+  const pdfSrc = lecture.pdfLocal
+    ? `${lecture.pdfLocal}#page=${activePdfPage}`
+    : `${lecture.pdfEmbed}?rm=minimal&pg=PA${activePdfPage}`;
+
+  const tabLabels = {
+    video: "🎬 Video",
+    pdf: "📄 PDF Notes",
+    slides: "📊 Slides",
   };
 
   return (
@@ -303,90 +325,68 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
       </header>
 
       <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
-        <div className="lg:w-[70%] w-full flex flex-col lg:overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-800 shrink-0">
-          <div className="w-full shrink-0 bg-black">
+        <div className="lg:w-[70%] w-full flex flex-col lg:overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-800 shrink-0 lg:shrink lg:min-h-0">
+          <div className="hidden lg:flex bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 shrink-0">
+            {["video", "pdf", "slides"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => switchTab(tab)}
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${
+                  activeTab === tab
+                    ? "border-[#3E3AF7] text-[#3E3AF7]"
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                }`}
+              >
+                {tabLabels[tab]}
+              </button>
+            ))}
+          </div>
+
+          <div
+            className={`w-full shrink-0 bg-black lg:flex-1 lg:min-h-0 lg:flex lg:items-center lg:justify-center ${
+              activeTab !== "video" ? "lg:hidden" : ""
+            }`}
+          >
             <video
               ref={initPlayer}
               src="/lecture.mp4"
               controls
               playsInline
-              className="w-full max-h-[30vh] lg:max-h-[65vh]"
+              className="w-full max-h-[30vh] lg:max-h-full lg:h-full object-contain"
             />
           </div>
 
-          <div className="hidden lg:flex lg:flex-col bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex-1 min-h-0">
-            <div className="flex border-b border-gray-200 dark:border-gray-800 px-4 shrink-0">
-              {["video", "pdf", "slides"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2.5 text-sm font-medium capitalize border-b-2 transition ${
-                    activeTab === tab
-                      ? "border-[#3E3AF7] text-[#3E3AF7]"
-                      : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                  }`}
-                >
-                  {tab === "pdf"
-                    ? "📄 PDF Notes"
-                    : tab === "slides"
-                      ? "📊 Slides"
-                      : "🎬 Video"}
-                </button>
-              ))}
+          {activeTab === "pdf" && (
+            <div className="hidden lg:flex flex-1 min-h-0 bg-gray-100 dark:bg-gray-900">
+              <iframe
+                key={`${pdfSrc}`}
+                src={pdfSrc}
+                className="w-full h-full border-0"
+                title="PDF Notes"
+                allow="autoplay"
+              />
             </div>
+          )}
 
-            <div className="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900">
-              {activeTab === "video" && (
-                <div className="p-4 flex items-center gap-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">Position:</span>
-                    <span className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-[#3E3AF7]">
-                      {formattedTime}
-                    </span>
-                  </div>
-                </div>
-              )}
-              {activeTab === "pdf" && (
-                <div
-                  className="mx-0 overflow-hidden"
-                  style={{ height: "300px" }}
-                >
-                  <iframe
-                    src={`${lecture.pdfEmbed}?rm=minimal&pg=PA${activePdfPage}`}
-                    className="border-0"
-                    style={{
-                      height: "400px",
-                      marginLeft: "-80px",
-                      marginRight: "-80px",
-                      width: "calc(100% + 160px)",
-                    }}
-                    title="PDF Notes"
-                    allow="autoplay"
-                  />
-                </div>
-              )}
-              {activeTab === "slides" && (
-                <div className="p-4 flex items-center gap-3">
-                  <Presentation
-                    size={18}
-                    className="text-orange-500 shrink-0"
-                  />
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {lecture.ppt}
-                  </p>
-                </div>
-              )}
+          {activeTab === "slides" && (
+            <div className="hidden lg:flex flex-1 min-h-0 items-center justify-center bg-gray-50 dark:bg-gray-900">
+              <div className="flex items-center gap-3">
+                <Presentation size={22} className="text-orange-500 shrink-0" />
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {lecture.ppt}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        <div className="lg:w-[30%] w-full flex flex-col overflow-hidden shrink-0 bg-white dark:bg-gray-900">
+        <div className="lg:w-[30%] w-full flex flex-col overflow-hidden shrink-0 lg:shrink lg:min-h-0 flex-1 lg:flex-none bg-white dark:bg-gray-900">
           <ChatPanel
             lectureId={lecture.id || lectureId}
             currentTime={currentTime}
             formattedTime={formattedTime}
             pauseAndGetTime={pauseAndGetTime}
-            seekTo={seekTo}
+            seekTo={handleSeek}
             onPdfCitation={handlePdfCitation}
           />
         </div>
