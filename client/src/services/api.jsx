@@ -1,7 +1,9 @@
-// const API_BASE = 'https://ahgv-learning-backend.onrender.com'
-// const API_BASE = 'http://localhost:8000'
-const API_BASE = "https://ahgv-learning-backend.onrender.com";
-// const API_BASE = 'http://localhost:8000'
+// CHANGED: base URL now comes from client/.env (VITE_API_BASE_URL); trailing slashes are stripped.
+// For local dev, set VITE_API_BASE_URL=http://localhost:8000 in client/.env
+const API_BASE = (
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://ahgv-learning-backend.onrender.com"
+).replace(/\/+$/, "");
 
 export const queryAssistant = async (
   question,
@@ -23,7 +25,6 @@ export const queryAssistant = async (
   });
   if (!res.ok) throw new Error("Query failed");
   const data = await res.json();
-
   console.log("Backend response:", data);
   return data;
 };
@@ -62,8 +63,15 @@ export const interviewFinish = async (payload) => {
   if (!res.ok) throw new Error("Interview finish failed");
   return res.json();
 };
-const QUIZ_BASE = import.meta.env.VITE_AGENT_URL || API_BASE;
-const QUIZ_PATH = "/quiz";
+
+// ── Quiz API ──────────────────────────────────────────────────────────────────
+// CHANGED: quiz now lives on the main backend under /api/quiz.
+// Set VITE_AGENT_URL only if you run the agent as a separate server
+// (then it serves /quiz/... with no /api prefix).
+const AGENT_URL = (import.meta.env.VITE_AGENT_URL || "").replace(/\/+$/, "");
+const QUIZ_BASE = AGENT_URL || API_BASE;
+const QUIZ_PATH = AGENT_URL ? "/quiz" : "/api/quiz";
+
 const readError = async (res, fallback) => {
   try {
     const d = await res.json();
