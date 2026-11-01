@@ -1,10 +1,7 @@
 fastapi
-uvicorn
-python-multipart
+uvicorn[standard]
 python-dotenv
 qdrant-client
-sentence-transformers
-faster-whisper
-pymupdf
+fastembed
 google-genai
 groq

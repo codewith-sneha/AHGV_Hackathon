@@ -8,6 +8,8 @@ import {
   Loader2,
   BookOpen,
   HelpCircle,
+  Lock,
+  Sparkles,
 } from "lucide-react";
 
 import ChatPanel from "../components/ChatPanel";
@@ -33,6 +35,12 @@ const lectureData = {
   },
 };
 
+const tabMeta = {
+  video: { label: "Video", icon: PlayCircle },
+  pdf: { label: "PDF Notes", icon: FileText },
+  slides: { label: "Slides", icon: Presentation },
+};
+
 const LectureOverview = ({
   lecture,
   lectureId,
@@ -40,10 +48,13 @@ const LectureOverview = ({
   loading,
   navigate,
 }) => (
-  <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col transition-colors duration-300">
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+  <div className="relative min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col transition-colors duration-300 overflow-hidden">
+    <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#3E3AF7]/15 rounded-full blur-3xl" />
+    <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+
+    <header className="relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
       <div className="mx-auto px-6 py-4 flex items-center gap-3">
-        <div className="w-8 h-8 bg-[#3E3AF7] rounded-lg flex items-center justify-center">
+        <div className="w-8 h-8 bg-gradient-to-br from-[#3E3AF7] to-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-[#3E3AF7]/30">
           <BookOpen size={16} className="text-white" />
         </div>
         <div className="cursor-pointer" onClick={() => navigate("/")}>
@@ -57,26 +68,27 @@ const LectureOverview = ({
       </div>
     </header>
 
-    <main className="flex-1 flex items-center justify-center px-6 py-12">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm max-w-lg w-full p-8">
-        <span className="text-xs font-semibold px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">
+    <main className="relative flex-1 flex items-center justify-center px-6 py-12">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl shadow-[#3E3AF7]/10 max-w-lg w-full p-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 bg-[#3E3AF7]/10 text-[#3E3AF7] rounded-full">
+          <PlayCircle size={12} />
           {lecture.duration}
         </span>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-4 mb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-4 mb-2 leading-snug">
           {lecture.title}
         </h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
+        <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed">
           {lecture.description}
         </p>
 
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 mb-6 space-y-3">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mb-5 space-y-3 border border-gray-100 dark:border-gray-800">
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             Course Materials
           </p>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-red-50 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-              <FileText size={15} className="text-red-500" />
+            <div className="w-9 h-9 bg-red-50 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
+              <FileText size={16} className="text-red-500" />
             </div>
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -88,8 +100,8 @@ const LectureOverview = ({
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-orange-50 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-              <Presentation size={15} className="text-orange-500" />
+            <div className="w-9 h-9 bg-orange-50 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
+              <Presentation size={16} className="text-orange-500" />
             </div>
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -102,20 +114,25 @@ const LectureOverview = ({
           </div>
         </div>
 
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 mb-6">
-          <p className="text-xs text-blue-700 dark:text-blue-400 font-medium mb-1">
-            🤖 AI Learning Assistant Enabled
-          </p>
-          <p className="text-xs text-blue-600 dark:text-blue-300">
-            Pause anytime and ask questions. The AI will only answer from
-            content you've watched so far.
-          </p>
+        <div className="flex items-start gap-3 bg-[#3E3AF7]/5 dark:bg-[#3E3AF7]/10 border border-[#3E3AF7]/20 rounded-2xl p-4 mb-6">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#3E3AF7] to-indigo-600 flex items-center justify-center shrink-0">
+            <Sparkles size={15} className="text-white" />
+          </div>
+          <div>
+            <p className="text-xs text-[#3E3AF7] dark:text-blue-300 font-semibold mb-0.5">
+              AI Learning Assistant Enabled
+            </p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              Pause anytime and ask questions. The AI will only answer from
+              content you've watched so far.
+            </p>
+          </div>
         </div>
 
         <button
           onClick={() => onStart(lectureId)}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 bg-[#3E3AF7] hover:bg-[#3230d6] text-white font-semibold py-3.5 rounded-xl transition disabled:opacity-70 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#3E3AF7] to-indigo-600 hover:opacity-90 text-white font-semibold py-3.5 rounded-xl transition shadow-lg shadow-[#3E3AF7]/30 disabled:opacity-70 disabled:cursor-not-allowed"
         >
           {loading ? (
             <>
@@ -270,12 +287,6 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
     ? `${lecture.pdfLocal}#page=${activePdfPage}`
     : `${lecture.pdfEmbed}?rm=minimal&pg=PA${activePdfPage}`;
 
-  const tabLabels = {
-    video: "🎬 Video",
-    pdf: "📄 PDF Notes",
-    slides: "📊 Slides",
-  };
-
   return (
     <div
       className="flex flex-col bg-gray-50 dark:bg-gray-950 overflow-hidden transition-colors duration-300"
@@ -291,19 +302,19 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
         />
       )}
 
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
+      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition cursor-pointer"
+            className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition cursor-pointer shrink-0"
           >
             <ArrowLeft size={16} />
             <span className="hidden sm:inline">Back</span>
           </button>
           <span className="text-gray-300 dark:text-gray-600">|</span>
-          <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 bg-[#3E3AF7] rounded-md flex items-center justify-center shrink-0">
-              <BookOpen size={11} className="text-white" />
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-6 h-6 bg-gradient-to-br from-[#3E3AF7] to-indigo-600 rounded-md flex items-center justify-center shrink-0 shadow-md shadow-[#3E3AF7]/30">
+              <BookOpen size={12} className="text-white" />
             </div>
             <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 line-clamp-1">
               {lecture.title}
@@ -320,12 +331,16 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
                 ? "Take the quiz"
                 : "Quiz unlocks in the last 90 seconds of the video"
             }
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3E3AF7] hover:bg-[#3230d6] text-white rounded-lg text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              quizUnlocked
+                ? "bg-[#3E3AF7] hover:bg-[#3230d6] text-white shadow-lg shadow-[#3E3AF7]/30 ring-2 ring-[#3E3AF7]/40"
+                : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+            }`}
           >
-            <HelpCircle size={13} />
+            {quizUnlocked ? <HelpCircle size={13} /> : <Lock size={13} />}
             Quiz
           </button>
-          <div className="flex items-center gap-1.5 bg-gray-900 dark:bg-gray-800 text-white px-2.5 py-1.5 rounded-full text-xs font-mono">
+          <div className="flex items-center gap-1.5 bg-gray-900 dark:bg-gray-800 text-white px-2.5 py-1.5 rounded-full text-xs font-mono ring-1 ring-white/10">
             <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
             {formattedTime}
           </div>
@@ -334,20 +349,24 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
 
       <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
         <div className="lg:w-[70%] w-full flex flex-col lg:overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-800 shrink-0 lg:shrink lg:min-h-0">
-          <div className="hidden lg:flex bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 shrink-0">
-            {["video", "pdf", "slides"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => switchTab(tab)}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${
-                  activeTab === tab
-                    ? "border-[#3E3AF7] text-[#3E3AF7]"
-                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                }`}
-              >
-                {tabLabels[tab]}
-              </button>
-            ))}
+          <div className="hidden lg:flex gap-1 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-3 pt-2 shrink-0">
+            {["video", "pdf", "slides"].map((tab) => {
+              const Icon = tabMeta[tab].icon;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => switchTab(tab)}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition ${
+                    activeTab === tab
+                      ? "border-[#3E3AF7] text-[#3E3AF7] bg-[#3E3AF7]/5"
+                      : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                  }`}
+                >
+                  <Icon size={15} />
+                  {tabMeta[tab].label}
+                </button>
+              );
+            })}
           </div>
 
           <div
@@ -364,12 +383,42 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
             />
           </div>
 
+          {activeTab === "video" && (
+            <div className="hidden lg:flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shrink-0">
+              <Sparkles size={14} className="text-[#3E3AF7] shrink-0" />
+              <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1">
+                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                  {lecture.title}
+                </span>{" "}
+                — Pause anytime and ask a question. Answers only use what you've
+                watched.
+              </p>
+            </div>
+          )}
+
           {activeTab === "pdf" && (
-            <div className="hidden lg:flex flex-1 min-h-0 bg-gray-100 dark:bg-gray-900">
+            <div className="hidden lg:flex flex-col flex-1 min-h-0 bg-gray-100 dark:bg-gray-900">
+              <div className="flex items-center justify-between gap-3 px-4 py-2 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0">
+                <div className="flex items-center gap-2 text-xs min-w-0">
+                  <FileText size={14} className="text-red-500 shrink-0" />
+                  <span className="font-medium text-gray-800 dark:text-gray-200 truncate">
+                    {lecture.pdf}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#3E3AF7]/10 text-[#3E3AF7] font-semibold shrink-0">
+                    Page {activePdfPage}
+                  </span>
+                </div>
+                <button
+                  onClick={() => switchTab("video")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3E3AF7] hover:bg-[#3230d6] text-white text-xs font-semibold transition shrink-0"
+                >
+                  <PlayCircle size={13} /> Back to video
+                </button>
+              </div>
               <iframe
                 key={pdfSrc}
                 src={pdfSrc}
-                className="w-full h-full border-0"
+                className="flex-1 w-full min-h-0 border-0"
                 title="PDF Notes"
                 allow="autoplay"
               />
@@ -377,13 +426,19 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
           )}
 
           {activeTab === "slides" && (
-            <div className="hidden lg:flex flex-1 min-h-0 items-center justify-center bg-gray-50 dark:bg-gray-900">
-              <div className="flex items-center gap-3">
-                <Presentation size={22} className="text-orange-500 shrink-0" />
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {lecture.ppt}
-                </p>
+            <div className="hidden lg:flex flex-col flex-1 min-h-0 items-center justify-center gap-3 bg-gray-50 dark:bg-gray-900">
+              <div className="w-14 h-14 rounded-2xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center">
+                <Presentation size={26} className="text-orange-500" />
               </div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {lecture.ppt}
+              </p>
+              <button
+                onClick={() => switchTab("video")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3E3AF7] hover:bg-[#3230d6] text-white text-xs font-semibold transition"
+              >
+                <PlayCircle size={13} /> Back to video
+              </button>
             </div>
           )}
         </div>

@@ -4,10 +4,10 @@ import {
   Send,
   Bot,
   User,
-  Loader2,
   Brain,
   PlayCircle,
   FileText,
+  Sparkles,
 } from "lucide-react";
 import { mockQuery } from "../services/mockApi";
 import { queryAssistant } from "../services/api";
@@ -76,7 +76,7 @@ const SourceCards = ({ citations, seekTo, onPdfCitation }) => {
         <button
           key={`v-${i}`}
           onClick={() => seekTo && c.seek_to != null && seekTo(c.seek_to)}
-          className="w-full flex items-start gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 rounded-xl text-left transition group"
+          className="w-full flex items-start gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 rounded-xl text-left transition group shadow-sm"
         >
           <PlayCircle
             size={15}
@@ -99,7 +99,7 @@ const SourceCards = ({ citations, seekTo, onPdfCitation }) => {
         <div
           key={`s-${i}`}
           onClick={() => onPdfCitation && c.page && onPdfCitation(c.page)}
-          className="flex items-start gap-2 px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/40 transition"
+          className="flex items-start gap-2 px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/40 transition shadow-sm"
         >
           <FileText
             size={15}
@@ -146,7 +146,7 @@ const ChatPanel = ({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, loading]);
 
   const sendMessage = async (question) => {
     if (!question.trim() || loading) return;
@@ -243,7 +243,7 @@ const ChatPanel = ({
           citation && (citation.kind === "video" || citation.kind === "audio");
         result.push(
           <span key={`cit-${key++}`} className="relative group inline-block">
-            <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-600 text-white rounded-full text-xs font-bold cursor-pointer hover:bg-blue-700 mx-0.5 align-middle">
+            <span className="inline-flex items-center justify-center w-5 h-5 bg-[#3E3AF7] text-white rounded-full text-xs font-bold cursor-pointer hover:bg-[#3230d6] mx-0.5 align-middle">
               {num}
             </span>
             {citation && (
@@ -304,14 +304,18 @@ const ChatPanel = ({
         <ReactMarkdown
           components={{
             p: ({ node, children, ...props }) => (
-              <p className="mb-2" {...props}>
+              <p className="mb-2 last:mb-0" {...props}>
                 {flatMapChildren(children, citations)}
               </p>
             ),
+            ul: ({ node, children }) => (
+              <ul className="list-disc pl-5 mb-2 space-y-1">{children}</ul>
+            ),
+            ol: ({ node, children }) => (
+              <ol className="list-decimal pl-5 mb-2 space-y-1">{children}</ol>
+            ),
             li: ({ node, children, ...props }) => (
-              <li className="mb-1" {...props}>
-                {flatMapChildren(children, citations)}
-              </li>
+              <li {...props}>{flatMapChildren(children, citations)}</li>
             ),
             strong: ({ node, children, ...props }) => (
               <strong {...props}>{flatMapChildren(children, citations)}</strong>
@@ -333,57 +337,70 @@ const ChatPanel = ({
         <InterviewModal onClose={() => setInterviewOpen(false)} />
       )}
 
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Bot size={18} className="text-blue-600" />
-            <span className="font-semibold text-gray-800 dark:text-gray-100 text-sm">
-              AI Learning Assistant
-            </span>
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#3E3AF7] to-indigo-600 flex items-center justify-center shadow-md shadow-[#3E3AF7]/30 shrink-0">
+              <Sparkles size={15} className="text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight">
+                AI Learning Assistant
+              </p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mt-0.5">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    loading ? "bg-amber-400 animate-pulse" : "bg-green-500"
+                  }`}
+                />
+                {loading
+                  ? "Thinking..."
+                  : `Knows up to ${formattedTime || "0:00"}`}
+              </p>
+            </div>
           </div>
           <button
             onClick={() => setInterviewOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#3E3AF7] hover:bg-[#3230d6] text-white rounded-lg text-xs font-semibold transition shadow-md shadow-[#3E3AF7]/20 shrink-0"
             title="Start AI Mock Interview"
           >
             <Brain size={12} />
             <span className="hidden sm:inline">Interview</span>
           </button>
         </div>
-        <div className="mt-1">
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            {loading ? "Thinking..." : " "}
-          </span>
-        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50/60 dark:bg-gray-950/40">
         {messages.map((msg, i) => {
           const style =
             BUBBLE_STYLES[msg.role === "user" ? "normal" : getKind(msg)];
           return (
             <div
               key={i}
-              className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              className={`flex gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
+                msg.role === "user" ? "justify-end" : "justify-start"
+              }`}
             >
               {msg.role === "assistant" && (
-                <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0 mt-1">
-                  <Bot size={14} className="text-blue-600" />
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#3E3AF7] to-indigo-600 flex items-center justify-center flex-shrink-0 mt-1 shadow-sm">
+                  <Bot size={14} className="text-white" />
                 </div>
               )}
               <div className="max-w-[85%] min-w-0">
                 <div
                   className={`rounded-2xl px-4 py-3 text-sm ${
                     msg.role === "user"
-                      ? "bg-blue-600 text-white rounded-tr-sm"
-                      : `${style.box} rounded-tl-sm`
+                      ? "bg-gradient-to-br from-[#3E3AF7] to-indigo-600 text-white rounded-tr-sm shadow-md shadow-[#3E3AF7]/20"
+                      : `${style.box} rounded-tl-sm shadow-sm`
                   }`}
                 >
                   {msg.role === "assistant" && style.label && (
                     <p className="text-xs font-bold mb-1">{style.label}</p>
                   )}
                   {msg.role === "user" ? (
-                    <p>{msg.content}</p>
+                    <p className="whitespace-pre-wrap break-words">
+                      {msg.content}
+                    </p>
                   ) : (
                     renderContent(msg.content, msg.citations || [])
                   )}
@@ -397,8 +414,11 @@ const ChatPanel = ({
                 )}
               </div>
               {msg.role === "user" && (
-                <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 mt-1">
-                  <User size={14} className="text-white" />
+                <div className="w-7 h-7 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 mt-1">
+                  <User
+                    size={14}
+                    className="text-gray-700 dark:text-gray-200"
+                  />
                 </div>
               )}
             </div>
@@ -406,33 +426,45 @@ const ChatPanel = ({
         })}
 
         {loading && (
-          <div className="flex gap-2 justify-start">
-            <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0 mt-1">
-              <Bot size={14} className="text-blue-600" />
+          <div className="flex gap-2 justify-start animate-in fade-in duration-200">
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#3E3AF7] to-indigo-600 flex items-center justify-center flex-shrink-0 mt-1 shadow-sm">
+              <Bot size={14} className="text-white" />
             </div>
-            <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-3">
-              <Loader2 size={16} className="animate-spin text-gray-500" />
+            <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-3.5 flex items-center gap-1.5 shadow-sm">
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce"
+                style={{ animationDelay: "0ms" }}
+              />
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce"
+                style={{ animationDelay: "150ms" }}
+              />
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce"
+                style={{ animationDelay: "300ms" }}
+              />
             </div>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
-      <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-800 flex flex-wrap gap-2">
+      <div className="px-4 pt-3 pb-1 border-t border-gray-100 dark:border-gray-800 flex flex-wrap gap-2">
         {QUICK_CHIPS.map((chip, i) => (
           <button
             key={i}
             onClick={() => sendMessage(chip)}
             disabled={loading}
-            className="text-xs px-3 py-1.5 rounded-full border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-[#3E3AF7]/30 text-[#3E3AF7] dark:text-blue-300 dark:border-blue-800 bg-[#3E3AF7]/5 dark:bg-blue-900/20 hover:bg-[#3E3AF7]/10 dark:hover:bg-blue-900/40 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
+            <Sparkles size={11} />
             {chip}
           </button>
         ))}
       </div>
 
-      <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800">
-        <div className="flex gap-2 items-end">
+      <div className="px-4 pt-2 pb-3">
+        <div className="flex items-end gap-2 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 focus-within:ring-2 focus-within:ring-[#3E3AF7]/40 focus-within:border-[#3E3AF7] transition">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -440,17 +472,17 @@ const ChatPanel = ({
             placeholder="Ask a question about what you've watched..."
             rows={2}
             disabled={loading}
-            className="flex-1 resize-none rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+            className="flex-1 resize-none bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-400 text-sm focus:outline-none disabled:opacity-50 max-h-32"
           />
           <button
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+            className="p-2 bg-gradient-to-br from-[#3E3AF7] to-indigo-600 text-white rounded-xl shadow-md shadow-[#3E3AF7]/30 hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
           >
-            <Send size={18} />
+            <Send size={16} />
           </button>
         </div>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
+        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5 px-1">
           ↵ Enter to send • Video auto-pauses on send
         </p>
       </div>

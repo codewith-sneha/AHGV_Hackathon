@@ -18,3 +18,186 @@ body {
   color: var(--text-main);
   transition: background-color 0.3s;
 }
+html {
+  scroll-behavior: smooth;
+}
+::selection {
+  background: rgba(62, 58, 247, 0.35);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(62, 58, 247, 0.4) transparent;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+@keyframes glow-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes sheen {
+  from {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  to {
+    transform: translateX(320%) skewX(-20deg);
+  }
+}
+@keyframes ring-brand {
+  0% {
+    box-shadow: 0 0 0 0 rgba(62, 58, 247, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(62, 58, 247, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(62, 58, 247, 0);
+  }
+}
+@keyframes ring-white {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(255, 255, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.hero-animated {
+  background-size: 200% 200%;
+  animation: gradient-shift 14s ease infinite;
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #ffffff, #c7d2fe, #f5d0fe, #ffffff);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  animation: gradient-shift 7s linear infinite;
+}
+
+.glow-breathe {
+  animation: glow-breathe 6s ease-in-out infinite;
+}
+
+.stagger > * {
+  animation: rise-in 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+.stagger > *:nth-child(2) {
+  animation-delay: 90ms;
+}
+.stagger > *:nth-child(3) {
+  animation-delay: 180ms;
+}
+.stagger > *:nth-child(4) {
+  animation-delay: 270ms;
+}
+
+.stat-float > * {
+  animation: float-y 5s ease-in-out infinite;
+}
+.stat-float > *:nth-child(2) {
+  animation-delay: -1.6s;
+}
+.stat-float > *:nth-child(3) {
+  animation-delay: -3.2s;
+}
+
+.pulse-ring-white {
+  animation: ring-white 2.4s ease-out infinite;
+}
+.pulse-ring-brand {
+  animation: ring-brand 2.2s ease-out infinite;
+}
+
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 35%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transform: translateX(-120%) skewX(-20deg);
+  animation: sheen 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.card-sheen::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 35%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(62, 58, 247, 0.1),
+    transparent
+  );
+  transform: translateX(-120%) skewX(-20deg);
+  pointer-events: none;
+}
+.card-sheen:not(.opacity-70):hover::after {
+  animation: sheen 0.9s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-animated,
+  .text-gradient,
+  .glow-breathe,
+  .stagger > *,
+  .stat-float > *,
+  .pulse-ring-white,
+  .pulse-ring-brand,
+  .btn-shine::after {
+    animation: none !important;
+  }
+}

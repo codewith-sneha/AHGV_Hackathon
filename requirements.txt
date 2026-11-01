@@ -15,7 +15,7 @@ filelock==4.2.0
 fsspec==2026.9.0
 google-auth==2.62.0
 google-genai==2.31.0
-groq==1.7.0
+groq
 grpcio==1.84.0
 h11==0.16.0
 h2==4.4.1
