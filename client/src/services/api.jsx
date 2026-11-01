@@ -62,3 +62,49 @@ export const interviewFinish = async (payload) => {
   if (!res.ok) throw new Error("Interview finish failed");
   return res.json();
 };
+const QUIZ_BASE = import.meta.env.VITE_AGENT_URL || API_BASE;
+const QUIZ_PATH = "/quiz";
+const readError = async (res, fallback) => {
+  try {
+    const d = await res.json();
+    if (typeof d?.detail === "string") return d.detail;
+  } catch {}
+  return fallback;
+};
+
+export const quizGenerate = async ({
+  videoId,
+  pauseTime,
+  allowedResources,
+  numQuestions = 5,
+}) => {
+  const res = await fetch(`${QUIZ_BASE}${QUIZ_PATH}/final`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      video_id: videoId,
+      pause_time: pauseTime,
+      allowed_resources: allowedResources,
+      course_id: null,
+      num_questions: numQuestions,
+    }),
+  });
+  if (!res.ok)
+    throw new Error(await readError(res, "Could not create the quiz."));
+  return res.json();
+};
+
+export const quizFeedback = async ({ quizToken, answers }) => {
+  const res = await fetch(`${QUIZ_BASE}${QUIZ_PATH}/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      quiz_token: quizToken,
+      answers,
+      ai_feedback: true,
+    }),
+  });
+  if (!res.ok)
+    throw new Error(await readError(res, "Could not check your answers."));
+  return res.json();
+};

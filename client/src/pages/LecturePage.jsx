@@ -13,10 +13,9 @@ import {
 import ChatPanel from "../components/ChatPanel";
 import QuizModal from "../components/QuizModal";
 import { useVideoTime } from "../hooks/useVideoTime";
-import { fetchMockQuiz } from "../services/mockQuiz";
 
 const END_QUIZ_TRIGGER_RATIO = 0.98;
-const SKIP_END_QUIZ_IF_ALL_ASKED = true;
+const QUIZ_UNLOCK_SECONDS_BEFORE_END = 90;
 
 const lectureData = {
   lecture_1: {
@@ -30,6 +29,7 @@ const lectureData = {
     pdfLocal: null,
     ppt: "Lecture1_Slides.pptx",
     duration: "13 min",
+    quizResources: ["Photosynthesis — Study Notes.pdf"],
   },
 };
 
@@ -142,23 +142,8 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
   const [activePdfPage, setActivePdfPage] = useState(1);
 
   const [quizOpen, setQuizOpen] = useState(false);
-  const [quizData, setQuizData] = useState(null);
   const [quizShown, setQuizShown] = useState(false);
-  const [quizLoading, setQuizLoading] = useState(false);
-
-  const askedRef = useRef(new Set());
-
-  const pickQuestion = (list, allowRepeat) => {
-    if (!Array.isArray(list) || list.length === 0) return null;
-    let idx = list.findIndex((_, i) => !askedRef.current.has(i));
-    if (idx === -1) {
-      if (!allowRepeat) return null;
-      askedRef.current.clear();
-      idx = 0;
-    }
-    askedRef.current.add(idx);
-    return list[idx];
-  };
+  const [quizUnlocked, setQuizUnlocked] = useState(false);
 
   const initPlayer = (el) => {
     if (!el) return;
@@ -202,51 +187,56 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
     const video = videoRef.current;
     if (!video) return;
 
-    const handleTimeUpdate = async () => {
+    const checkUnlock = () => {
+      const d = video.duration;
+      if (!d || isNaN(d)) return;
+      if (
+        video.ended ||
+        d - video.currentTime <= QUIZ_UNLOCK_SECONDS_BEFORE_END
+      ) {
+        setQuizUnlocked(true);
+      }
+    };
+
+    video.addEventListener("timeupdate", checkUnlock);
+    video.addEventListener("ended", checkUnlock);
+    return () => {
+      video.removeEventListener("timeupdate", checkUnlock);
+      video.removeEventListener("ended", checkUnlock);
+    };
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleTimeUpdate = () => {
       if (quizShown || quizOpen) return;
       const duration = video.duration;
       if (!duration || isNaN(duration)) return;
 
       if (video.currentTime / duration >= END_QUIZ_TRIGGER_RATIO) {
         setQuizShown(true);
-        try {
-          const data = await fetchMockQuiz();
-          const q = pickQuestion(data.quiz, !SKIP_END_QUIZ_IF_ALL_ASKED);
-          if (q) {
-            video.pause();
-            setQuizData(q);
-            setQuizOpen(true);
-          }
-        } catch (err) {
-          console.error("Quiz fetch failed:", err);
-        }
+        video.pause();
+        setQuizOpen(true);
       }
     };
     video.addEventListener("timeupdate", handleTimeUpdate);
     return () => video.removeEventListener("timeupdate", handleTimeUpdate);
   }, [quizShown, quizOpen]);
 
-  const openQuiz = async () => {
-    if (quizLoading || quizOpen) return;
+  const openQuiz = () => {
+    if (!quizUnlocked || quizOpen) return;
     videoRef.current?.pause();
-    setQuizLoading(true);
-    try {
-      const data = await fetchMockQuiz();
-      const q = pickQuestion(data.quiz, true);
-      if (q) {
-        setQuizData(q);
-        setQuizOpen(true);
-      }
-    } catch (err) {
-      console.error("Quiz fetch failed:", err);
-    } finally {
-      setQuizLoading(false);
-    }
+    setQuizOpen(true);
   };
 
   const handleQuizClose = () => {
     setQuizOpen(false);
-    if (activeTab === "video") videoRef.current?.play();
+    const video = videoRef.current;
+    if (activeTab === "video" && video && !video.ended) {
+      video.play()?.catch(() => {});
+    }
   };
 
   const switchTab = (tab) => {
@@ -265,6 +255,17 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
     seekTo(seconds);
   };
 
+  const handleReview = (citation) => {
+    setQuizOpen(false);
+    const isVideo = citation.kind === "video" || citation.kind === "audio";
+    if (isVideo && citation.seek_to != null) {
+      handleSeek(citation.seek_to);
+      videoRef.current?.play()?.catch(() => {});
+    } else {
+      handlePdfCitation(citation.page || 1);
+    }
+  };
+
   const pdfSrc = lecture.pdfLocal
     ? `${lecture.pdfLocal}#page=${activePdfPage}`
     : `${lecture.pdfEmbed}?rm=minimal&pg=PA${activePdfPage}`;
@@ -280,8 +281,14 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
       className="flex flex-col bg-gray-50 dark:bg-gray-950 overflow-hidden transition-colors duration-300"
       style={{ height: "100dvh" }}
     >
-      {quizOpen && quizData && (
-        <QuizModal quiz={quizData} onClose={handleQuizClose} />
+      {quizOpen && (
+        <QuizModal
+          videoId={lecture.id}
+          allowedResources={lecture.quizResources}
+          getPauseTime={() => videoRef.current?.duration || 0}
+          onClose={handleQuizClose}
+          onReview={handleReview}
+        />
       )}
 
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between shrink-0">
@@ -307,14 +314,15 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={openQuiz}
-            disabled={quizLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3E3AF7] hover:bg-[#3230d6] text-white rounded-lg text-xs font-semibold transition disabled:opacity-60"
+            disabled={!quizUnlocked}
+            title={
+              quizUnlocked
+                ? "Take the quiz"
+                : "Quiz unlocks in the last 90 seconds of the video"
+            }
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3E3AF7] hover:bg-[#3230d6] text-white rounded-lg text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {quizLoading ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : (
-              <HelpCircle size={13} />
-            )}
+            <HelpCircle size={13} />
             Quiz
           </button>
           <div className="flex items-center gap-1.5 bg-gray-900 dark:bg-gray-800 text-white px-2.5 py-1.5 rounded-full text-xs font-mono">
@@ -359,7 +367,7 @@ const LecturePlayer = ({ lectureId, lecture, navigate }) => {
           {activeTab === "pdf" && (
             <div className="hidden lg:flex flex-1 min-h-0 bg-gray-100 dark:bg-gray-900">
               <iframe
-                key={`${pdfSrc}`}
+                key={pdfSrc}
                 src={pdfSrc}
                 className="w-full h-full border-0"
                 title="PDF Notes"
